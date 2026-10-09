@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>双花瓣配电网 · 可编辑 / 可仿真原型</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%231d4ed8'/%3E%3Ccircle cx='11' cy='16' r='4.6' fill='none' stroke='%23fff' stroke-width='2.2'/%3E%3Ccircle cx='21' cy='16' r='4.6' fill='none' stroke='%230d9488' stroke-width='2.2'/%3E%3C/svg%3E">
 <style>
   :root{--ink:#12263f;--muted:#5b7083;--a:#1d4ed8;--b:#0d9488;--tie:#e8590c;
         --sub:#334155;--flt:#e03131;--bg:#eaeff6;--live:#0f8a4a;--dead:#b9c4d2;--line:#e6ebf2;}
@@ -541,7 +542,7 @@ var LAYOUTS={
      chain([['SUBA','f1','A1','A'],['A1','B','A2','A'],['A2','B','A3','A'],['A3','B','A4','A'],
             ['A4','B','A5','A']]);
      chainB([['A5','B','SUBA','f2']],150);
-     TOPO.badges=[{plain:1,x:800,y:150,t:'花瓣（甲站两回出线 · 5 站 Ⅰ段母线成环）',
+     TOPO.badges=[{plain:1,x:800,y:150,t:'花瓣（变电站1 两回出线 · 5 站 Ⅰ段母线成环）',
         s:'变电站1出线1 → 5 站串联 → 变电站1出线2 · {MODE}',op:'开关站3',c:'a'}];
    }},
  /* ── 双环网：两个环网、环间联络 ── */
@@ -658,15 +659,42 @@ function build(){
 }
 /* ================= 运行方式：环网开环 / 闭环 · 母联常开 / 常合 ================= */
 var LOOP=false;                 /* 环网开环点为分位（false）或全环合上（true） */
-function modeLabel(){ return LOOP?'环网闭环':'开环点 '+(LAYOUTS[TOPO.kind].openShort||'开关站3'); }
+function hasOpenPts(){ return ((LAYOUTS[TOPO.kind]||{}).openPts||[]).length>0; }
+function modeLabel(){ return hasOpenPts()?(LOOP?'环网闭环':'环网开环'):'合环运行'; }
+/* 环网的“合环 / 开环”由环上开关的真实位置决定，与按钮、校验条同源 */
+function openRingCount(){
+  var used={}; WIRES.forEach(function(w){ used[w.a.d+':'+w.a.t]=1; used[w.b.d+':'+w.b.t]=1; });
+  var n=0;
+  ORDER.forEach(function(id){ var d=DEV[id]; if(d.type!=='sta') return;
+    d.terms.forEach(function(t){ if(!t.sw&&(t.k==='in'||t.k==='sp')&&used[id+':'+t.id]) n++; }); });
+  return n;
+}
+function tieStats(){ var tot=0,openN=0;
+  ORDER.forEach(function(id){ if(DEV[id].type!=='sta') return;
+    var t=findTermObj(id,'bt'); if(!t) return; tot++; if(!t.sw) openN++; });
+  return {tot:tot,open:openN,shut:tot-openN}; }
+function modeText(){ return SIM.paired?'两电源并列':(openRingCount()===0?'合环运行':'开环运行'); }
 function syncModeBtn(){
   var b=document.getElementById('bOut');
   if(b){ b.textContent=OUT?'母联常开':'母联常合'; b.className=OUT?'primary':''; }
   var c=document.getElementById('bLoop');
-  if(c){ c.textContent=LOOP?'环网闭环':'环网开环'; c.className=LOOP?'primary':''; }
+  if(c){
+    if(hasOpenPts()){
+      c.disabled=false;
+      c.textContent=LOOP?'环网闭环':'环网开环';
+      c.className=LOOP?'primary':'';
+      c.title='运行方式：环网闭环 = 各环首尾全合、两站并列、短路电流较高；环网开环 = 在环上留一处开环点，无并列';
+    } else if(TOPO.radial){
+      c.disabled=true; c.className='ghost'; c.textContent='无环网（单辐射）';
+      c.title='单辐射接线无环网，不存在合环 / 开环运行方式。';
+    } else {
+      c.disabled=true; c.className='ghost'; c.textContent='合环运行（无开环点）';
+      c.title='本模板各环首尾由同一电源的两回出线构成，属“合环运行”；两花瓣之间的开环点在母联开关上，请用“母联常开 / 常合”调整。';
+    }
+  }
   TOPO.badges.forEach(function(bd){ if(!bd.s) return;
     if(!bd.tpl) bd.tpl=bd.s;
-    bd.s=bd.tpl.replace('{MODE}',LOOP?'环网闭环':('开环点 '+(bd.op||'开关站3'))); });
+    bd.s=bd.tpl.replace('{MODE}', hasOpenPts()?(LOOP?'环网闭环':'环网开环'):'合环运行'); });
 }
 /* reset=true：按模板初始运行方式复位；否则只按当前 LOOP/OUT 重新铺开关位置 */
 function applyModes(reset){
@@ -677,7 +705,13 @@ function applyModes(reset){
   (L.openPts||[]).forEach(function(pt){ var t=findTermObj(pt[0],pt[1]); if(t) t.sw=!!LOOP; });
   syncModeBtn();
 }
-function actLoop(){ LOOP=!LOOP; push(); applyModes(false); paint(); syncMenu(); }
+function actLoop(){
+  if(!hasOpenPts()){
+    fmsg(TOPO.radial?'单辐射接线无环网，不能设置环网开环 / 闭环。'
+      :'本模板为“合环运行”，没有环网开环点；两花瓣之间的开环点在母联开关上，请用“母联常开 / 常合”调整。');
+    return; }
+  LOOP=!LOOP; push(); applyModes(false); paint(); syncMenu();
+}
 
 /* 切换拓扑模板 */
 function loadTopo(k){ if(!LAYOUTS[k]||k===TOPO.kind&&false){} if(!LAYOUTS[k]) return;
@@ -743,6 +777,8 @@ function liveLoads(){ var n=0; ORDER.forEach(function(id){
   if(DEV[id].type==='ld'&&ldLive(id)) n++; }); return n; }
 function deadLoads(){ var n=0; ORDER.forEach(function(id){
   if(DEV[id].type==='ld'&&!ldLive(id)) n++; }); return n; }
+/* 已带电的节点数：用于转供搜索的“连通性增益”，可识别需要多步合闸才能接通的备用通道 */
+function liveNodes(){ var n=0; for(var k in EN) if(EN[k]) n++; return n; }
 function impacted(did,tid){
   var t=findTermObj(did,tid); if(!t) return [];
   var o1=t.sw,o2=EN,o3=SIM.paired,o4=FLOW;
@@ -963,39 +999,60 @@ function badgeHW(s){ return (s.length>1?12+s.length*7.4:22)/2+1.5; }
 /* 动作过程（右侧面板，HTML 渲染） */
 function esc(x){ return String(x==null?'':x).replace(/[&<>"]/g,function(c){
   return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
+/* —— 动作过程文案：全部由拓扑 / 开关真实状态驱动，①②③ 与时间轴、底栏同源 —— */
+function preStateText(){
+  var parts=[];
+  if(TOPO.radial) parts.push('单辐射链式供电、无联络通道');
+  else if(TOPO.rings.length) parts.push('环网 '+TOPO.rings.join('、')+(openRingCount()===0?'合环运行':'开环运行'));
+  var ts=tieStats();
+  if(ts.tot) parts.push(ts.open===ts.tot?'各站母联分位（常开），两供电分区互为备用'
+    :(ts.shut===ts.tot?'各站母联合上':(ts.shut+' 座开关站母联合上')));
+  parts.push('全部配电房正常供电');
+  return '故障前：'+parts.join('，')+'。';
+}
+function faultStepDetail(){
+  var s=(FAULT.tripped&&FAULT.tripped.length?('跳开 '+FAULT.tripped.map(kname).join('、')+
+    (FAULT.escalate?(DEV[FAULT.escalate]&&DEV[FAULT.escalate].type==='sub'?'（越级跳闸，本站全停）':'（越级跳闸）'):'')):'无电源开关动作');
+  if(FAULT.lockTie) s+='；'+DEV[FAULT.lockTie].name+' 母联备自投被闭锁';
+  else if(FAULT.bztArm&&FAULT.bztArm.length) s+='；'+FAULT.bztArm.length+' 座开关站一段母线失压，母联备自投启动';
+  return s;
+}
+function isoStepDetail(){
+  if(!FAULT.iso||!FAULT.iso.length) return '待执行';
+  var s='拉开 '+FAULT.iso.map(kname).join('、');
+  if(FAULT.rf) s+='；'+kname(FAULT.rf)+' 拒动，后备保护越级、故障区间扩大';
+  return s;
+}
+function restoreStepDetail(){
+  if(FAULT.restored&&FAULT.restored.length){
+    var bz=(FAULT.bzt||[]).map(function(id){ return (DEV[id]?DEV[id].name:id)+'母联'; });
+    var ot=FAULT.restored.filter(function(k){ return (FAULT.bzt||[]).indexOf(kd(k).d)<0; }).map(kname);
+    var s=(bz.length?('母联备自投动作：合上 '+bz.join('、')):'');
+    if(ot.length) s+=(s?'；':'')+'合上 '+ot.join('、');
+    return s;
+  }
+  if((FAULT.phase||0)>=3) return FAULT.restoreNote||'非故障段无需合闸，运行方式保持不变';
+  return FAULT.rf?'转供被闭锁（故障未完全隔离）':'待执行';
+}
 function actionPanel(){
   var box=document.getElementById('pAct'); if(!box) return;
   if(!FAULT){ box.innerHTML='<div class="ph">未开始演练。在左侧「场景库」选择故障场景后点 <b>自动演示</b>，'+
     '或依次点 <b>① 模拟故障 → ② 隔离故障 → ③ 转供恢复</b> 单步执行。</div>'; return; }
+  var ph=FAULT.phase||0;
   /* 竖向时间轴：＜0.00 s 正常运行 → 0.00 s 故障发生 → 之后各步 */
   var rows=[];
   function add(t,title,det,on,c){ rows.push({t:t,title:title,det:det,on:on,c:c||'n'}); }
-  add('＜0.00 s','正常运行','故障前：环网合环运行、母联断开，全部配电房正常供电', true, 'n');
-  add('0.00 s','① 故障发生 · 保护动作',
-      (FAULT.tripped.length?('跳开 '+FAULT.tripped.map(kname).join('、')+
-        (FAULT.escalate?'（越级跳闸，本站全停）':'')):'无电源开关动作')+
-      (FAULT.lockTie?'；母联备自投被闭锁'
-        :((FAULT.bztArm&&FAULT.bztArm.length)?('；'+FAULT.bztArm.length+' 座开关站一段母线失压，母联备自投启动'):'')),
-      true, 'f');
+  add('＜0.00 s','正常运行',FAULT.preText||preStateText(), true, 'n');
+  add('0.00 s','① 故障发生 · 保护动作',faultStepDetail(), true, 'f');
   if(FAULT.tr){
-    var rc=!!(FAULT.reclosed&&FAULT.reclosed.length);
+    var rc=ph>=2&&!!(FAULT.reclosed&&FAULT.reclosed.length);
     add('+0.60 s','② 重合闸成功',
         rc?('合上 '+FAULT.reclosed.map(kname).join('、')+'，瞬时性故障消失'):'待执行', rc, 'r');
     add('+0.60 s','③ 供电恢复正常',
-        rc?'无需隔离与转供，线路继续正常运行':'待执行', rc, 'r');
+        ph>=3?'无需隔离与转供，线路继续正常运行':'待执行', ph>=3, 'r');
   } else {
-    add('+0.35 s','② 故障隔离',
-        FAULT.iso.length?('拉开 '+FAULT.iso.map(kname).join('、')+
-          (FAULT.rf?('；'+kname(FAULT.rf)+' 拒动'):'')):'待执行', !!FAULT.iso.length, 'i');
-    var rdet;
-    if(!FAULT.restored.length) rdet=FAULT.rf?'转供被闭锁（故障未完全隔离）':'待执行';
-    else {
-      var bz=(FAULT.bzt||[]).map(function(id){ return (DEV[id]?DEV[id].name:id)+'母联'; });
-      var ot=FAULT.restored.filter(function(k){ return (FAULT.bzt||[]).indexOf(kd(k).d)<0; }).map(kname);
-      rdet=(bz.length?('母联备自投动作：合上 '+bz.join('、')):'');
-      if(ot.length) rdet+=(rdet?'；':'')+'合上 '+ot.join('、');
-    }
-    add('+1.20 s','③ 转供恢复', rdet, !!FAULT.restored.length, 'r');
+    add('+0.35 s','② 故障隔离', isoStepDetail(), ph>=2, 'i');
+    add('+1.20 s','③ 转供恢复', restoreStepDetail(), ph>=3, 'r');
   }
   var lastIdx=-1; rows.forEach(function(r,i){ if(r.on) lastIdx=i; });
   var h='<div class="ph" style="margin-bottom:2px">当前故障：<b>'+esc(FAULT.label)+'</b></div>';
@@ -1411,7 +1468,9 @@ var OUT=true;
 function actAllClose(){ push(); ORDER.forEach(function(id){ DEV[id].terms.forEach(function(t){ t.sw=true; }); }); paint(); }
 function actAllOpen(){ push(); ORDER.forEach(function(id){ DEV[id].terms.forEach(function(t){ t.sw=false; }); }); paint(); }
 function actReset(){ var s=null; UNDO=[]; FAULT=null; DEADSRC={}; DEMO.step=0; DEMO.playing=false;
-  build(); paint(); setTl(0); fmsg('已复位为「'+TOPO.name+'」初始运行方式。'); }
+  build(); paint(); setTl(0); tlMsg('尚未开始');
+  var cs=curScene(); setTlLabels(cs&&cs.tr?'tr':'perm');
+  fmsg('已复位为「'+TOPO.name+'」初始运行方式。'); }
 function actUndo(){ var u=UNDO.pop(); if(u) load(JSON.parse(u)); }
 function actExport(){ var b=new Blob([JSON.stringify(snap(),null,1)],{type:'application/json'});
   var a=document.createElement('a'); a.href=URL.createObjectURL(b);
@@ -1428,7 +1487,10 @@ function actFlow(){ SHOW_FLOW=!SHOW_FLOW; paint(); syncMenu(); }
 function actGlow(){ SHOW_GLOW=!SHOW_GLOW; paint(); syncMenu(); }
 function actOutward(){ setAllTie(!OUT); }
 function actFocus(){ toggleFocus(); }
-function actDemo(){ demoPlay(); } function actStep(){ demoStop(); if(DEMO.step>=3) DEMO.step=0; advance(); }
+function actDemo(){ demoPlay(); }
+function actStep(){ demoStop();
+  if(FAULT&&(FAULT.phase||0)>=3){ fmsg('本轮演练已完成（③ 转供恢复）。请先“复位运行方式”，或重新选择场景后再单步执行。'); return; }
+  advance(); }
 function actClear(){ demoReset(); }
 function actImpFault(){ var b=document.getElementById('impBox');
   b.style.display=(b.style.display==='block')?'none':'block'; }
@@ -1611,6 +1673,7 @@ function showDoc(){ openDlg('接线约定 / 图元画法',
   '<tr><td class="k">相切</td><td>两片花瓣在每个开关站经<b>母联（分段）开关</b>相切；正常方式母联断开，两片花瓣互为备用（备自投）</td></tr>'+
   '<tr><td class="k">故障</td><td>线路任一段故障：差动保护瞬时切除该电缆两端开关，非故障段不停电；母线故障：跳开该段母线全部开关并闭锁母联备自投</td></tr>'+
   '<tr><td class="k">转供</td><td>该段两路进线全失（或电源全停）时母联备自投动作：断开两路进线开关、合上母联，由另一段母线接带其负荷</td></tr>'+
+  '<tr><td class="k">运行方式</td><td>底栏“运行方式 / 校验条”由<b>环网开关与母联的真实位置</b>驱动：环上无分位即“合环运行”、有分位即“开环运行”；母联全分位为两段互为备用、合上为两段并列。双花瓣 / 单花瓣各环由同一电源的两回出线构成，不存在环网开环点，故“环网闭环 / 开环”按钮对这两个模板不可用</td></tr>'+
   '</table>'+
   '<h4>已知简化</h4><p>未做载流量与保护定值配合校核；重合闸按一次重合成功处理；备自投按"最少合闸次数恢复最多负荷"演示，工程上由各站备自投各自动作。本工具为演示原型，不可作为现场操作依据。</p>'); }
 function showAbout(){ openDlg('关于本工具',
@@ -1781,6 +1844,8 @@ function setFault(){
   FAULT={kind:SEL.kind,id:SEL.id,label:label,tripped:[],iso:[],restored:[],zone:[],msg:'',
          zoneSeed:'',rf:SCENE_RF||null,tr:SCENE_TR,inc:inc,lockTie:null,noseal:!!inc,
          bztArm:[],bzt:[],pre:JSON.stringify(snap())};
+  FAULT.phase=1;
+  FAULT.preText=preStateText();                     /* 故障前运行方式：按动作开始前的开关实态冻结 */
   var act=[], ldEnd=null;
   if(w0){
     /* 光纤电流差动保护：瞬时切开故障电缆两端开关，故障区间与系统解列；
@@ -1798,10 +1863,10 @@ function setFault(){
   } else {
     /* 母线电流差动保护：跳开与故障母线连接的全部进出线开关，并闭锁母联备自投 */
     d0.terms.forEach(function(t){ if(t.sec===1) act.push(d0.id+':'+t.id); });
-    act.push(d0.id+':bt'); FAULT.lockTie=d0.id;
+    act.push(d0.id+':bt'); FAULT.lockTie=d0.id; FAULT.lockWhy='bus';
     FAULT.zoneSeed=d0.id+':b1';
   }
-  /* 保护拒动 → 越级跳闸：本站其余出线一并跳开，该站全停 */
+  /* 保护拒动 → 后备保护越级动作 */
   var esc='';
   if(FAULT.rf){
     var q0=kd(FAULT.rf), sd=q0.d;
@@ -1811,7 +1876,14 @@ function setFault(){
       DEV[sd].terms.forEach(function(t){ var kk=sd+':'+t.id;
         if(kk===FAULT.rf) return;                          /* 拒动开关保持合位 */
         if(t.sw) act.push(kk); });
-      esc=kname(FAULT.rf)+' 开关拒动 → 越级跳开本站全部出线，'+DEV[sd].name+'全停';
+      esc=kname(FAULT.rf)+' 拒动 → 越级跳开 '+DEV[sd].name+' 全部出线，'+DEV[sd].name+'全停';
+    } else if(DEV[sd]&&DEV[sd].type==='sta'){
+      var sec=(findTermObj(sd,q0.t)||{}).sec||1;
+      DEV[sd].terms.forEach(function(t){ var kk=sd+':'+t.id;
+        if(kk===FAULT.rf) return;                          /* 拒动开关保持合位 */
+        if((t.sec===sec||t.id==='bt')&&t.sw) act.push(kk); });
+      FAULT.lockTie=sd; FAULT.lockWhy='rf'; FAULT.escalate=sd;
+      esc=kname(FAULT.rf)+' 拒动 → 后备保护越级跳开 '+DEV[sd].name+' 该段全部进出线开关并闭锁母联';
     }
   }
   act.forEach(function(kk){ var q=kd(kk), t=findTermObj(q.d,q.t);
@@ -1820,12 +1892,18 @@ function setFault(){
   push(); simulate();
   FAULT.bztArm=bztCandidates();                     /* ① 同时识别失压段 → 启动母联备自投 */
   var nd=deadLoads();
-  FAULT.msg='① 保护动作：'+(esc?esc:('跳开 '+names.join('、')))+
-    (ldEnd?('，切除 '+ldEnd.name+' 的分支电缆；该用户出线为单电源，所带负荷失电')
-      :(nd?('，'+nd+' 个配电房失电'):
-        '；故障区间已切除，非故障段继续供电（合环运行 + 差动保护两端切除，双花瓣的核心优势）'))+
-    (FAULT.lockTie?('；本站 Ⅰ段母线故障，母联备自投被闭锁（不得向故障母线送电）')
-      :(FAULT.bztArm.length?('；'+FAULT.bztArm.length+' 座开关站一段母线失压，母联备自投已启动'):''));
+  /* —— ① 文案按真实保护动作分支，禁止与开关实态、失电数打架 —— */
+  var m;
+  if(esc)         m='① 保护动作：'+esc+(nd?('，'+nd+' 个配电房失电'):'，非故障段继续供电');
+  else if(ldEnd)  m='① 保护动作：跳开 '+names.join('、')+'，切除 '+ldEnd.name+' 的分支电缆；该用户出线为单电源，所带负荷失电';
+  else if(nd)     m='① 保护动作：跳开 '+names.join('、')+'，'+nd+' 个配电房失电';
+  else            m='① 保护动作：跳开 '+names.join('、')+'；故障区间已切除，非故障段继续供电'+
+                    (TOPO.kind==='petal2'?'（合环运行 + 差动保护两端切除，双花瓣的核心优势）':'');
+  if(FAULT.lockTie) m+='；'+DEV[FAULT.lockTie].name+
+      (FAULT.lockWhy==='rf'?' 母联备自投被闭锁（故障侧未切除，禁止向该段送电）'
+                            :' Ⅰ段母线故障，母联备自投被闭锁（不得向故障母线送电）');
+  else if(FAULT.bztArm.length) m+='；'+FAULT.bztArm.length+' 座开关站一段母线失压，母联备自投已启动';
+  FAULT.msg=m;
   paint();
 }
 /* 瞬时性故障：重合闸成功 */
@@ -1834,12 +1912,14 @@ function reclose(){
   FAULT.reclosed=[];
   FAULT.tripped.forEach(function(k){ var q=kd(k), t=findTermObj(q.d,q.t);
     if(t&&!t.sw){ t.sw=true; FAULT.reclosed.push(k); } });
+  FAULT.phase=2;
   simulate();
   FAULT.msg='② 重合闸成功：故障为瞬时性，自动重合后供电恢复，无需隔离与转供';
   push(); paint();
 }
 function transientEnd(){
   if(!FAULT) return;
+  FAULT.phase=3;
   FAULT.msg='③ 供电恢复正常：瞬时性故障已消失，停电时间约 0.6 s，线路继续正常运行';
   paint();
 }
@@ -1862,24 +1942,36 @@ function doIso(){
     else if(d.type==='sub'){ d.terms.forEach(function(t){ openOne(d.id,t.id); }); }
     else { d.terms.forEach(function(t){ if(t.sec===1||t.id==='bt') openOne(d.id,t.id); }); }
   }
-  var note='';
   if(ref.length){
     var up=otherEndOfWire(ref[0]);
     if(up&&FAULT.iso.indexOf(up)<0){ var q=kd(up), t2=findTermObj(q.d,q.t);
       if(t2){ t2.sw=false; FAULT.iso.push(up); names.push(kname(up)+'（越级）'); } }
-    note='；'+ref.map(kname).join('、')+' 拒动，该侧无法隔离，故障区间扩大到该站';
   }
   FAULT.zone=zoneKeys();
+  FAULT.phase=2;
+  FAULT.isoChanged=changed;
   simulate();
   var nd2=deadLoads();
-  FAULT.msg='② 故障隔离：拉开 '+names.join('、')+note+(changed?'':'（① 差动保护已切除两端，此处不再产生新的断开点）')+
-    '；故障区间已与系统解列'+(nd2?('，失电 '+nd2+' 个配电房'):'，非故障段全部保持供电');
+  var m;
+  if(ref.length){
+    var sd=kd(ref[0]).d, isSub=DEV[sd]&&DEV[sd].type==='sub';
+    m='② 故障隔离：'+kname(ref[0])+(isSub?' 拒动，越级跳开本站全部出线、变电站全停'
+      :' 拒动，后备保护越级跳开该段全部进出线并闭锁母联')+
+      (FAULT.iso.length?('；已拉开 '+FAULT.iso.map(kname).join('、')):'')+
+      '；故障侧已由后备保护切除'+(nd2?('，'+nd2+' 个配电房失电（须人工隔离后再转供）'):'，非故障段保持供电');
+  } else {
+    m='② 故障隔离：拉开 '+names.join('、')+
+      (changed?'':(FAULT.kind==='wire'?'（① 差动保护已切除两端，此处不再产生新的断开点）'
+                                   :'（① 保护动作已切除故障侧电源，此处不再产生新的断开点）'))+
+      '；故障区间已与系统解列'+(nd2?('，失电 '+nd2+' 个配电房'):'，非故障段全部保持供电');
+  }
+  FAULT.msg=m;
   push(); paint();
 }
 /* ③ 转供：在"不并列、不向故障区间送电"的前提下最大化复电 */
 function doRestore(){
   if(!FAULT){ fmsg('还没有故障点，请先点“① 模拟故障”。'); return; }
-  if(!FAULT.iso.length){ fmsg('请先执行“② 隔离故障区间”，否则合闸会重新送上故障。'); return; }
+  if((FAULT.phase||0)<2){ fmsg('请先执行“② 隔离故障区间”，否则合闸会重新送上故障。'); return; }
   simulate();
   FAULT.zone=zoneKeys();
   var before=deadLoads();
@@ -1893,20 +1985,25 @@ function doRestore(){
     else { FAULT.restored.push(id+':bt'); FAULT.bzt.push(id); }
   });
   simulate(); FAULT.zone=zoneKeys();
-  /* (2) 其余备用通道（就近合上进线/环网开关）补齐剩余失电负荷 */
-  for(var round=0;round<30;round++){
+  /* (2) 其余备用通道（就近合上进线/环网/联络开关）补齐剩余失电负荷。
+     以“带电节点数”为增益：备用通道若需两级开关串联（如环间联络出线 + 联络开关），
+     也能被逐步接通；只在确有失电负荷时才动作。 */
+  if(deadLoads()>0)
+  for(var round=0;round<40;round++){
     simulate();
-    var base=liveLoads(), best=null, bestGain=0, bestCost=9;
+    var used={}; WIRES.forEach(function(w){ used[w.a.d+':'+w.a.t]=1; used[w.b.d+':'+w.b.t]=1; });
+    var base=liveNodes(), best=null, bestGain=0, bestCost=9;
     var zl=FAULT.noseal?false:zoneLive();
     ORDER.forEach(function(id){
       var d=DEV[id];
       d.terms.forEach(function(t){
         if(t.sw) return;
+        if(!used[id+':'+t.id]) return;                     /* 未接线的备用间隔不参与 */
         if(FAULT.iso.indexOf(id+':'+t.id)>=0) return;
-        if(t.id==='bt'&&FAULT.lockTie===id) return;       /* 母线故障闭锁母联备自投 */
+        if(FAULT.lockTie===id&&(t.id==='bt'||t.sec===1)) return;   /* 故障母线所在段不再送电 */
         t.sw=true; simulate();
         var ok=!SIM.paired && !zl && (FAULT.noseal||!zoneLive());
-        var gain=liveLoads()-base;
+        var gain=liveNodes()-base;
         t.sw=false;
         var cost=(id==='SUBA'||id==='SUBB')?0:1;
         if(ok&&(gain>bestGain||(gain===bestGain&&gain>0&&cost<bestCost))){
@@ -1915,7 +2012,7 @@ function doRestore(){
     });
     if(!best) break;
     var bt=findTermObj(best[0],best[1]); bt.sw=true;
-    FAULT.restored.push(best[0]+':'+best[1]);
+    if(FAULT.restored.indexOf(best[0]+':'+best[1])<0) FAULT.restored.push(best[0]+':'+best[1]);
   }
   simulate();
   var names=FAULT.restored.map(kname);
@@ -1931,13 +2028,19 @@ function doRestore(){
     if(FAULT.kind==='wire'){ var wf=findWire(FAULT.id);
       ldFlt=!!(wf&&(DEV[wf.a.d].type==='ld'||DEV[wf.b.d].type==='ld')); }
     FAULT.why = TOPO.radial ? '单辐射结构无联络电源、无备用通道，非故障段无法转供，须待故障修复后恢复送电'
+      : FAULT.rf ? ('故障侧开关拒动（'+kname(FAULT.rf)+'），后备保护已越级切除并闭锁转供，须人工隔离后再送电')
       : ldFlt ? '该配电房为单电源分支，故障点位于其专属分支电缆上，须待修复后送电'
       : FAULT.lockTie ? '母线故障已闭锁母联备自投，该段母线所带配电房须待母线修复后送电'
-      : FAULT.rf ? ('故障区间未完全隔离（'+kname(FAULT.rf)+' 拒动），带故障转供被闭锁，须人工隔离后再送电')
-      : '无可用备用通道，转供容量不足';
+      : (SRC.filter(function(x){ return DEADSRC[x]; }).length
+          ? SRC.filter(function(x){ return DEADSRC[x]; }).map(function(x){ return DEV[x].name; }).join('、')+' 全站失电，本拓扑无其他电源可转供，须待电源恢复后送电'
+          : '无可用备用通道，转供容量不足');
   } else FAULT.why='';
   var hold=[];
   ORDER.forEach(function(id){ if(DEV[id].type==='ld'&&!ldLive(id)) hold.push(DEV[id].name); });
+  FAULT.phase=3;
+  if(!names.length) FAULT.restoreNote = now
+    ? ('无需合闸：'+(FAULT.why||'非故障段无可用备用通道，须待故障修复后送电'))
+    : '无需合闸：故障区间已隔离，非故障段在合环运行下继续供电';
   FAULT.msg='③ 转供恢复：'+acts+'，恢复 '+back+' 个配电房'+
     (now?('；仍有 '+now+' 个未复电（'+hold.slice(0,3).join('、')+(hold.length>3?' 等':'')+
       (FAULT.why?('）——'+FAULT.why):'，位于故障区间或母线，须待修复）')):'；非故障段已全部恢复供电');
@@ -1964,47 +2067,101 @@ function wiresAtTerm(d,t){
     if((w.a.d===d&&w.a.t===t)||(w.b.d===d&&w.b.t===t)) return w; }
   return null;
 }
-function scenesDefault(){ return [
-  {c:'一、线路（电缆）故障 · 合环运行',
-   n:'L1 花瓣Ⅰ 变电站1出线1 电缆故障（变电站1出线1 → 开关站1 Ⅰ段）', t:mkW('SUBA:f1','A1:A'),
-   d:'光纤差动保护瞬时跳开故障电缆两端开关。花瓣Ⅰ 另一侧（变电站1出线2）继续供电，非故障段不受影响。'},
-  {c:'一、线路（电缆）故障 · 合环运行',
-   n:'L2 花瓣Ⅰ 上排主干故障（开关站1 → 开关站2 Ⅰ段）', t:mkW('A1:B','A2:A'),
-   d:'花瓣Ⅰ 环网中间段故障，两端断路器跳开；开关站1 侧由变电站1出线1供电、开关站2 侧由变电站1出线2经下排供电，全线不停电。'},
-  {c:'一、线路（电缆）故障 · 合环运行',
-   n:'L3 花瓣Ⅱ 上排主干故障（开关站5 → 开关站4 Ⅱ段）', t:mkW('A5:C','A4:D'),
-   d:'花瓣Ⅱ 环网中间段故障，两端断路器跳开；开关站5 侧由变电站2出线1供电、开关站4 侧由变电站2出线2经下排供电。'},
-  {c:'一、线路（电缆）故障 · 合环运行',
-   n:'L4 花瓣Ⅱ 变电站2出线2 电缆故障（变电站2出线2 → 开关站9 Ⅱ段）', t:mkW('SUBB:f2','B4:D'),
-   d:'变电站2出线2 故障，两端开关跳开；花瓣Ⅱ 由变电站2出线1单侧带全环（经纵向联络），非故障段不受影响。'},
-  {c:'一、线路（电缆）故障 · 合环运行',
-   n:'L6 花瓣间纵向联络电缆故障（开关站5 Ⅰ段 ↔ 开关站9 Ⅰ段）', t:mkW('A5:B','B4:B'),
-   d:'两排之间的纵向联络电缆故障并被两端切除；上下两排 Ⅰ段由此解列，但每排仍由变电站1 两回出线分别供电，不失负荷。'},
-  {c:'一、线路（电缆）故障 · 合环运行',
-   n:'L5 配电房分支电缆故障（开关站1 Ⅰ段 → 配电房1）', t:mkW('A1:u1','A1_u1:t1'),
-   d:'分支电缆无保护，由开关站1 Ⅰ段用户出线开关切除；该用户出线为单电源，所带配电房失电（须待修复）。'},
-  {c:'二、开关站故障',
-   n:'K1 开关站2 Ⅰ段母线故障（闭锁母联备自投）', t:{kind:'dev',id:'A2'},
-   d:'母线差动保护跳开与该母线连接的全部进出线开关并闭锁母联自投；开关站2 Ⅱ段及其余各站不受影响。'},
-  {c:'二、开关站故障',
-   n:'K2 开关站2 Ⅰ段两路进线电源同时失电（母联备自投）', t:{kind:'dev',id:'A2'}, inc:true,
-   d:'该段两路进线全失 → 备自投动作：断开两路进线开关、合上母联开关，由本站 Ⅱ段接带 Ⅰ段负荷。'},
-  {c:'二、开关站故障',
-   n:'K3 环网开关拒动（开关站2 Ⅰ段环网进线拒动）', t:mkW('A1:B','A2:A'), rf:'A2:A',
-   d:'隔离时开关站2 Ⅰ段环网进线开关拒动，故障无法从该侧切除，开关站2 全站停电；对比 L2 可见拒动的代价。'},
-  {c:'三、电源（变电站）故障',
-   n:'P1 变电站1 全站失电（10 kV 母线故障）', t:{kind:'dev',id:'SUBA'},
-   d:'变电站1 全停、两回出线跳闸，花瓣Ⅰ 各站 Ⅰ段两路进线同时失电；各站母联备自投动作，由花瓣Ⅱ 转供。'},
-  {c:'三、电源（变电站）故障',
-   n:'P2 变电站2 全站失电（10 kV 母线故障）', t:{kind:'dev',id:'SUBB'},
-   d:'变电站2 全停、两回出线跳闸，花瓣Ⅱ 各站 Ⅱ段两路进线同时失电；各站母联备自投动作，由花瓣Ⅰ 转供。'},
-  {c:'四、瞬时性故障（重合闸）', tr:true,
-   n:'T1 花瓣Ⅰ 上排主干瞬时故障（重合闸成功）', t:mkW('A1:B','A2:A'),
-   d:'瞬时性故障，两端保护跳闸后自动重合成功，短时停电即恢复，无需隔离与转供。'},
-  {c:'五、保护 / 开关异常',
-   n:'R1 变电站1出线1 保护拒动（越级跳闸）', t:mkW('SUBA:f1','A1:A'), rf:'SUBA:f1',
-   d:'出线开关拒动，保护越级跳开变电站1 全部出线，变电站1 全停；各站母联备自投动作，由花瓣Ⅱ 转供恢复。'}
-]; }
+/* 场景库随拓扑模板切换：名称 / 说明 / 故障前描述都与当前网架一致 */
+function scenesDefault(){
+  var k=TOPO.kind, out=[];
+  function add(c,n,t,d,x){ var o={c:c,n:n,t:t,d:d}; if(x) for(var q in x) o[q]=x[q]; out.push(o); }
+  if(k==='petal2'){
+    var C1='一、线路（电缆）故障 · 合环运行';
+    add(C1,'L1 花瓣Ⅰ 变电站1出线1 电缆故障（变电站1出线1 → 开关站1 Ⅰ段）',mkW('SUBA:f1','A1:A'),
+      '光纤差动保护瞬时跳开故障电缆两端开关。花瓣Ⅰ 另一侧（变电站1出线2）继续供电，非故障段不受影响。');
+    add(C1,'L2 花瓣Ⅰ 上排主干故障（开关站1 → 开关站2 Ⅰ段）',mkW('A1:B','A2:A'),
+      '花瓣Ⅰ 环网中间段故障，两端断路器跳开；开关站1 侧由变电站1出线1供电、开关站2 侧由变电站1出线2经下排供电，全线不停电。');
+    add(C1,'L3 花瓣Ⅱ 上排主干故障（开关站5 → 开关站4 Ⅱ段）',mkW('A5:C','A4:D'),
+      '花瓣Ⅱ 环网中间段故障，两端断路器跳开；开关站5 侧由变电站2出线1供电、开关站4 侧由变电站2出线2经下排供电。');
+    add(C1,'L4 花瓣Ⅱ 变电站2出线2 电缆故障（变电站2出线2 → 开关站9 Ⅱ段）',mkW('SUBB:f2','B4:D'),
+      '变电站2出线2 故障，两端开关跳开；花瓣Ⅱ 由变电站2出线1单侧带全环（经纵向联络），非故障段不受影响。');
+    add(C1,'L5 配电房分支电缆故障（开关站1 Ⅰ段 → 配电房1）',mkW('A1:u1','A1_u1:t1'),
+      '分支电缆无保护，由开关站1 Ⅰ段用户出线开关切除；该用户出线为单电源，所带配电房失电（须待修复）。');
+    add(C1,'L6 花瓣间纵向联络电缆故障（开关站5 Ⅰ段 ↔ 开关站9 Ⅰ段）',mkW('A5:B','B4:B'),
+      '两排之间的纵向联络电缆故障并被两端切除；上下两排 Ⅰ段由此解列，但每排仍由变电站1 两回出线分别供电，不失负荷。');
+    add('二、开关站故障','K1 开关站2 Ⅰ段母线故障（闭锁母联备自投）',{kind:'dev',id:'A2'},
+      '母线差动保护跳开与该母线连接的全部进出线开关并闭锁母联自投；开关站2 Ⅱ段及其余各站不受影响。');
+    add('二、开关站故障','K2 开关站2 Ⅰ段两路进线电源同时失电（母联备自投）',{kind:'dev',id:'A2'},
+      '该段两路进线全失 → 备自投动作：断开两路进线开关、合上母联开关，由本站 Ⅱ段接带 Ⅰ段负荷。',{inc:true});
+    add('二、开关站故障','K3 环网开关拒动（开关站2 Ⅰ段环网进线拒动）',mkW('A1:B','A2:A'),
+      '隔离时开关站2 Ⅰ段环网进线开关拒动，本侧无法切除；后备保护越级跳开开关站2 该段全部进出线并闭锁母联，该段所带配电房失电——对比 L2 可见拒动的代价。',{rf:'A2:A'});
+    add('三、电源（变电站）故障','P1 变电站1 全站失电（10 kV 母线故障）',{kind:'dev',id:'SUBA'},
+      '变电站1 全停、两回出线跳闸，花瓣Ⅰ 各站 Ⅰ段两路进线同时失电；各站母联备自投动作，由花瓣Ⅱ 转供。');
+    add('三、电源（变电站）故障','P2 变电站2 全站失电（10 kV 母线故障）',{kind:'dev',id:'SUBB'},
+      '变电站2 全停、两回出线跳闸，花瓣Ⅱ 各站 Ⅱ段两路进线同时失电；各站母联备自投动作，由花瓣Ⅰ 转供。');
+    add('四、瞬时性故障（重合闸）','T1 花瓣Ⅰ 上排主干瞬时故障（重合闸成功）',mkW('A1:B','A2:A'),
+      '瞬时性故障，两端保护跳闸后自动重合成功，短时停电即恢复，无需隔离与转供。',{tr:true});
+    add('五、保护 / 开关异常','R1 变电站1出线1 保护拒动（越级跳闸）',mkW('SUBA:f1','A1:A'),
+      '出线开关拒动，保护越级跳开变电站1 全部出线，变电站1 全停；各站母联备自投动作，由花瓣Ⅱ 转供恢复。',{rf:'SUBA:f1'});
+  } else if(k==='petal1'){
+    var C='一、线路（电缆）故障 · 合环运行';
+    add(C,'L1 变电站1出线1 电缆故障（变电站1出线1 → 开关站1 Ⅰ段）',mkW('SUBA:f1','A1:A'),
+      '光纤差动保护瞬时跳开故障电缆两端；花瓣为合环运行，另一侧（变电站1出线2）继续供电，非故障段不受影响。');
+    add(C,'L2 主干线中间段故障（开关站1 → 开关站2 Ⅰ段）',mkW('A1:B','A2:A'),
+      '环网中间段故障，两端断路器跳开；两端各由变电站1 的一回出线供电，合环下全线不停电。');
+    add(C,'L5 配电房分支电缆故障（开关站1 Ⅰ段 → 配电房1）',mkW('A1:u1','A1_u1:t1'),
+      '分支电缆无保护，由开关站1 Ⅰ段用户出线开关切除；该用户出线为单电源，所带配电房失电（须待修复）。');
+    add('二、开关站故障','K1 开关站2 Ⅰ段母线故障（闭锁母联备自投）',{kind:'dev',id:'A2'},
+      '母线差动保护跳开该段全部进出线并闭锁母联自投；开关站2 Ⅱ段及其余各站不受影响。');
+    add('三、电源（变电站）故障','P1 变电站1 全站失电（10 kV 母线故障）',{kind:'dev',id:'SUBA'},
+      '单花瓣只有一座变电站，变电站全停后无第二电源可转供，全网失电，须待变电站恢复后送电。');
+    add('四、瞬时性故障（重合闸）','T1 主干线瞬时故障（重合闸成功）',mkW('A1:B','A2:A'),
+      '瞬时性故障，两端保护跳闸后自动重合成功，短时停电即恢复，无需隔离与转供。',{tr:true});
+  } else if(k==='ring2'){
+    var C='一、线路（电缆）故障 · 开环运行';
+    add(C,'L1 环网Ⅰ 变电站1出线1 电缆故障（变电站1出线1 → 开关站1 Ⅰ段）',mkW('SUBA:f1','A1:A'),
+      '光纤差动保护瞬时跳开故障电缆两端；环网Ⅰ 另一侧（变电站1出线2）继续供电，非故障段不受影响。');
+    add(C,'L2 环网Ⅰ 主干故障（开关站1 → 开关站2 Ⅰ段）',mkW('A1:B','A2:A'),
+      '环网Ⅰ 中间段故障，两端断路器跳开；开环运行下由变电站1出线1 / 出线2 两端分别供电，非故障段不受影响。');
+    add(C,'L3 环网Ⅱ 变电站2出线1 电缆故障（变电站2出线1 → 开关站5 Ⅰ段）',mkW('SUBB:f1','B1:A'),
+      '环网Ⅱ 变电站2出线1 电缆故障，两端切除；环网Ⅱ 由变电站2出线2 反送，非故障段不受影响。');
+    add(C,'L6 环间联络电缆故障（开关站3 ↔ 开关站7 联络）',mkW('A3:C','B3:C'),
+      '两个环网之间的联络电缆故障并被切除；两条环维持各自开环运行，不失负荷，但环间互备能力暂时失去。');
+    add('二、开关站故障','K1 开关站2 Ⅰ段母线故障（闭锁母联备自投）',{kind:'dev',id:'A2'},
+      '母线差动保护跳开该段全部进出线并闭锁母联自投；开关站2 Ⅱ段及其余各站不受影响。');
+    add('三、电源（变电站）故障','P1 变电站1 全站失电（10 kV 母线故障）',{kind:'dev',id:'SUBA'},
+      '变电站1 全停，环网Ⅰ 全环失电；合上环间联络开关由环网Ⅱ 转供，非故障段恢复供电。');
+    add('三、电源（变电站）故障','P2 变电站2 全站失电（10 kV 母线故障）',{kind:'dev',id:'SUBB'},
+      '变电站2 全停，环网Ⅱ 全环失电；合上环间联络开关由环网Ⅰ 转供，非故障段恢复供电。');
+    add('四、瞬时性故障（重合闸）','T1 环网Ⅰ主干瞬时故障（重合闸成功）',mkW('A1:B','A2:A'),
+      '瞬时性故障，两端保护跳闸后自动重合成功，短时停电即恢复，无需隔离与转供。',{tr:true});
+  } else if(k==='ring1'){
+    var C='一、线路（电缆）故障 · 开环运行';
+    add(C,'L1 变电站1出线1 电缆故障（变电站1出线1 → 开关站1 Ⅰ段）',mkW('SUBA:f1','A1:A'),
+      '光纤差动保护瞬时跳开故障电缆两端；开环运行下非故障段由出线2 反送，必要时合上开环点恢复全网。');
+    add(C,'L2 主干线中间段故障（开关站1 → 开关站2 Ⅰ段）',mkW('A1:B','A2:A'),
+      '环网中间段故障，两端断路器跳开；非故障段可由两端分别供电，失电负荷经开环点转供恢复。');
+    add(C,'L5 配电房分支电缆故障（开关站1 Ⅰ段 → 配电房1）',mkW('A1:u1','A1_u1:t1'),
+      '分支电缆无保护，由开关站1 Ⅰ段用户出线开关切除；该用户出线为单电源，所带配电房失电（须待修复）。');
+    add('二、开关站故障','K1 开关站2 Ⅰ段母线故障（闭锁母联备自投）',{kind:'dev',id:'A2'},
+      '母线差动保护跳开该段全部进出线并闭锁母联自投；开关站2 Ⅱ段及其余各站不受影响。');
+    add('三、电源（变电站）故障','P1 变电站1 全站失电（10 kV 母线故障）',{kind:'dev',id:'SUBA'},
+      '单环网只有一座变电站，变电站全停后无第二电源可转供，全网失电，须待变电站恢复后送电。');
+    add('四、瞬时性故障（重合闸）','T1 主干线瞬时故障（重合闸成功）',mkW('A1:B','A2:A'),
+      '瞬时性故障，两端保护跳闸后自动重合成功，短时停电即恢复，无需隔离与转供。',{tr:true});
+  } else if(k==='radial'){
+    var C='一、线路（电缆）故障 · 单辐射';
+    add(C,'L1 主干首段故障（变电站1出线1 → 开关站1）',mkW('SUBA:f1','A1:A'),
+      '单辐射、无联络电源；首段故障跳开后下游全部停电且无法转供，须待故障修复后送电。');
+    add(C,'L2 主干中间段故障（开关站1 → 开关站2）',mkW('A1:B','A2:A'),
+      '故障段两端断路器跳开；下游（开关站2、开关站3）无备用电源，须待故障修复后送电。');
+    add(C,'L5 配电房分支电缆故障（开关站1 → 配电房1）',mkW('A1:u1','A1_u1:t1'),
+      '分支电缆无保护，由开关站1 用户出线开关切除；该用户出线为单电源，所带配电房失电（须待修复）。');
+    add('二、开关站故障','K1 开关站2 Ⅰ段母线故障',{kind:'dev',id:'A2'},
+      '母线差动保护跳开该段全部进出线；单辐射下该段所带配电房失电且无法转供。');
+    add('三、电源（变电站）故障','P1 变电站1 全站失电（10 kV 母线故障）',{kind:'dev',id:'SUBA'},
+      '单辐射只有一个电源，变电站全停即全网失电，须待变电站恢复后送电。');
+    add('四、瞬时性故障（重合闸）','T1 主干瞬时故障（重合闸成功）',mkW('A1:B','A2:A'),
+      '瞬时性故障，保护跳闸后自动重合成功，短时停电即恢复，无需隔离与转供。',{tr:true});
+  }
+  return out;
+}
 function resolveTarget(str){
   var w=findWire(str);
   if(w) return {kind:'wire',a:w.a.d+':'+w.a.t,b:w.b.d+':'+w.b.t};
@@ -2062,21 +2219,49 @@ function setTl(n){
     its[i].className='tli'+(k===n?' on':(k<n?' done':'')); }
 }
 function tlMsg(s){ document.getElementById('tlMsg').textContent=s; }
-function tlText(n,tr){ if(tr) return n===1?'0.00 s：保护跳闸，切除故障':
-  n===2?'+0.60 s：自动重合闸成功':n===3?'+0.60 s：供电恢复，无需隔离与转供':'';
-  return n===1?'0.00 s：保护动作，切除故障侧电源':
-  n===2?'+0.35 s：环网开关动作，隔离故障区间':
-  n===3?'+1.20 s：联络/备用开关合闸，非故障段转供复电':''; }
+/* 底栏/时间轴文案：由真实动作结果生成，不自说自话 */
+function tlSummary(n){
+  if(!FAULT||!n) return '尚未开始';
+  var tr=!!FAULT.tr;
+  if(n===1) return tr?'0.00 s：保护跳闸，切除故障'
+    :'0.00 s：保护动作，切除故障侧电源'+(FAULT.tripped.length?('（'+FAULT.tripped.map(kname).join('、')+'）'):'');
+  if(n===2){ if(tr) return '+0.60 s：自动重合闸成功';
+    if(FAULT.rf) return '+0.35 s：'+kname(FAULT.rf)+' 拒动，后备保护越级跳闸、故障区间扩大';
+    if(FAULT.isoChanged===false) return '+0.35 s：故障侧电源已由保护切除，无需新增断开点，故障区间与系统解列';
+    return '+0.35 s：环网开关动作，隔离故障区间'; }
+  if(n===3){ if(tr) return '+0.60 s：供电恢复，无需隔离与转供';
+    if(!FAULT.restored.length) return deadLoads()
+      ? '+1.20 s：非故障段无可用备用通道，须待故障修复后送电'
+      : '+1.20 s：非故障段无需操作，运行方式保持不变';
+    return '+1.20 s：'+(FAULT.bzt.length?'母联备自投合闸、':'')+'备用/联络开关动作，'+
+      FAULT.restored.length+' 处转供，非故障段恢复供电'; }
+  return '';
+}
+function tlText(n){ return tlSummary(n); }
+/* 三条入口（①②③ / 单步 / 自动演示）共用的进度同步：右侧动作过程、左侧时间轴、底栏同源 */
+function syncPhase(){ var n=FAULT?(FAULT.phase||0):0; DEMO.step=n; setTl(n);
+  tlMsg(FAULT?tlSummary(n):'尚未开始'); }
+function ensurePhase(n){ if(FAULT&&(FAULT.phase||0)<n) FAULT.phase=n; }
 function demoStop(){ if(DEMO.timer) clearTimeout(DEMO.timer); DEMO.timer=null; DEMO.playing=false; }
+/* 单步调度：①②③ 按钮、单步、自动演示三条入口都走这里 */
+function drillStep(n){
+  if(n===1){ if(FAULT&&(FAULT.phase||0)>0) clearFault(); setFault(); }
+  else if(n===2){ if(!FAULT){ fmsg('还没有故障点，请先执行“① 模拟故障”。'); return false; }
+    if(FAULT.tr) reclose(); else doIso(); }
+  else { if(!FAULT){ fmsg('还没有故障点，请先执行“① 模拟故障”。'); return false; }
+    if((FAULT.phase||0)<2){ fmsg('请先执行“② 隔离故障区间”，否则合闸会重新送上故障。'); return false; }
+    if(FAULT.tr) transientEnd(); else doRestore(); }
+  if(!FAULT) return false;              /* ① 失败（未选中目标）时 setFault 已给出提示 */
+  ensurePhase(n); syncPhase(); return true;
+}
 function advance(){
-  var s=curScene(), tr=!!(s&&s.tr);
-  if(DEMO.step>=3) return;
-  if(DEMO.step===0){ if(!loadScene(s)){ demoStop(); return; } setFault(); }
-  else if(DEMO.step===1){ if(tr) reclose(); else doIso(); }
-  else { if(tr) transientEnd(); else doRestore(); }
-  DEMO.step++;
-  setTl(DEMO.step); tlMsg(tlText(DEMO.step,tr));
-  if(DEMO.playing&&DEMO.step<3) DEMO.timer=setTimeout(advance,1600);
+  if(!FAULT){
+    var s=curScene();
+    if(!s){ fmsg('请先在「场景库」里选择一条故障场景。'); demoStop(); return; }
+    if(!loadScene(s)){ demoStop(); return; }
+    drillStep(1);
+  } else drillStep(Math.min(3,(FAULT.phase||0)+1));
+  if(DEMO.playing&&FAULT&&(FAULT.phase||0)<3) DEMO.timer=setTimeout(advance,1600);
   else DEMO.playing=false;
 }
 function demoPlay(){
@@ -2085,49 +2270,70 @@ function demoPlay(){
   advance();
 }
 function demoReset(){ demoStop(); clearFault(); DEMO.step=0; setTl(0); tlMsg('尚未开始');
-  setTlLabels('perm'); fmsg('已复位：故障清除，恢复正常运行方式。'); }
+  var s=curScene(); setTlLabels(s&&s.tr?'tr':'perm');
+  fmsg('已复位：故障清除，恢复正常运行方式。'); }
 function parseFaultLines(txt){
-  var out=[];
+  var ok=[], errs=[];
   txt.split('\n').forEach(function(line){
     if(!line.trim()) return;
     var p=line.split('|').map(function(x){ return x.trim(); });
     var tgt=p[p.length-1], nm=p.length>1?p[0]:('自定义故障 · '+tgt);
+    if(!tgt){ errs.push('“'+line.trim()+'”：缺少故障目标'); return; }
     var g=resolveTarget(tgt);
-    if(g) out.push({c:'六、导入的故障点',n:nm,t:g,d:'由导入的故障点生成。'});
+    if(g) ok.push({c:'六、导入的故障点',n:nm,t:g,d:'由导入的故障点生成。'});
+    else errs.push('“'+nm+'”：目标 “'+tgt+'” 在当前拓扑里没有对应图元');
   });
-  return out;
+  return {list:ok, errs:errs};
 }
-document.getElementById('bFault').onclick=function(){ demoStop(); setFault(); };
-document.getElementById('bIso').onclick=function(){ demoStop(); doIso(); };
-document.getElementById('bRestore').onclick=function(){ demoStop(); doRestore(); };
+document.getElementById('bFault').onclick=function(){ demoStop(); drillStep(1); };
+document.getElementById('bIso').onclick=function(){ demoStop(); drillStep(2); };
+document.getElementById('bRestore').onclick=function(){ demoStop(); drillStep(3); };
 document.getElementById('bClearFault').onclick=demoReset;
 document.getElementById('bPlay').onclick=demoPlay;
 document.getElementById('bFocus').onclick=function(){
   var m=document.getElementById('mid'); m.classList.toggle('focus');
   this.textContent=m.classList.contains('focus')?'⛶ 退出专注':'⛶ 专注画布';
 };
-document.getElementById('bStep').onclick=function(){ demoStop(); if(DEMO.step>=3) DEMO.step=0; advance(); };
+document.getElementById('bStep').onclick=function(){ demoStop();
+  if(FAULT&&(FAULT.phase||0)>=3){ fmsg('本轮演练已完成（③ 转供恢复）。请先“复位运行方式”，或重新选择场景后再单步执行。'); return; }
+  advance(); };
 document.getElementById('selScene').onchange=function(){ demoStop(); DEMO.step=0; clearFault(); setTl(0);
-  var s=curScene(); tlMsg('尚未开始');
+  var s=curScene(); tlMsg('尚未开始'); setTlLabels(s&&s.tr?'tr':'perm');
   if(s){ loadScene(s); fmsg(s.n+'：'+s.d); } };
 document.getElementById('bImpFault').onclick=function(){
   var b=document.getElementById('impBox'); b.style.display=(b.style.display==='block')?'none':'block'; };
 document.getElementById('bImpCancel').onclick=function(){ document.getElementById('impBox').style.display='none'; };
 document.getElementById('bImpGo').onclick=function(){
-  var list=parseFaultLines(document.getElementById('impTxt').value);
+  var r=parseFaultLines(document.getElementById('impTxt').value);
   var hint=document.getElementById('impHint');
-  if(!list.length){ hint.textContent='没有解析出有效故障点，检查一下格式（名称 | 目标）。'; return; }
-  list.forEach(function(s){ SCENES.push(s); });
+  if(!r.list.length){ hint.textContent='没有解析出有效故障点'+
+    (r.errs.length?('。\n无效行：'+r.errs.join('；')):'，检查一下格式（名称 | 目标）。'); return; }
+  demoStop(); if(FAULT) clearFault(); DEMO.step=0; setTl(0); tlMsg('尚未开始');
+  r.list.forEach(function(s){ SCENES.push(s); });
   fillScenes();
-  document.getElementById('selScene').value=String(SCENES.length-1);
-  hint.textContent='已载入 '+list.length+' 个故障点';
+  var first=r.list[0], idx=SCENES.indexOf(first);
+  if(idx>=0) document.getElementById('selScene').value=String(idx);
+  loadScene(first);
+  hint.textContent='已载入 '+r.list.length+' 个故障点'+
+    (r.errs.length?('；已忽略 '+r.errs.length+' 行无效：'+r.errs.join('；')):'');
   document.getElementById('impBox').style.display='none';
-  fmsg('已导入 '+list.length+' 个故障点，可在下拉框中逐个演示。');
+  fmsg('已导入 '+r.list.length+' 个故障点，已选中「'+first.n+'」，可直接点“① 模拟故障”或“自动演示”。');
 };
 
 /* ================= 面板 ================= */
 function refresh(){ simulate(); render(); }
 function paint(){ simulate(); render(); panels(); faultPanel(); actionPanel(); }
+/* 图元所属花瓣：电源按站、负荷按其接入母线段（Ⅰ段=花瓣Ⅰ / Ⅱ段=花瓣Ⅱ） */
+function ownerLabel(d){
+  if(!d) return '';
+  if(d.type==='sub') return TOPO.secColor
+    ?(d.id==='SUBB'?'电源 · 花瓣Ⅱ（变电站2）':'电源 · 花瓣Ⅰ（变电站1）'):'电源 · 变电站';
+  if(d.type==='sta') return TOPO.secColor?'两花瓣共用（Ⅰ / Ⅱ 段母线）':'Ⅰ / Ⅱ 段母线';
+  if(d.type==='ld'){ var t=findTermObj(d.host,d.hterm), sec=(t&&t.sec)||1;
+    return TOPO.secColor?(sec===2?'负荷 · 花瓣Ⅱ（接开关站 Ⅱ段）':'负荷 · 花瓣Ⅰ（接开关站 Ⅰ段）')
+      :('负荷 · '+(sec===2?'Ⅱ':'Ⅰ')+'段母线'); }
+  return '';
+}
 function faultPanel(){
   if(!FAULT) return;
   var s='【'+FAULT.label+'】'+(FAULT.msg||'');
@@ -2149,10 +2355,6 @@ function panels(){
     if(d.type==='sta'&&!liveOf(id)) nIso++;
   });
   var nSta=ORDER.filter(function(i){ return DEV[i].type==='sta'; }).length;
-  function ringOpen(pre){ var n=0;
-    ORDER.forEach(function(id){ if(id.indexOf(pre)!==0) return;
-      DEV[id].terms.forEach(function(t){ if(!t.sw&&(t.k==='in'||t.k==='sp')) n++; }); });
-    return n; }
   var deadSrc=SRC.filter(function(x){ return DEADSRC[x]; });
   document.getElementById('tags').innerHTML=
     '<span class="tag act"><i></i>'+esc(TOPO.name)+'</span>'+
@@ -2161,18 +2363,24 @@ function panels(){
     '<span class="tag"><i></i>开关站 <b>'+nSta+'</b> 座</span>'+
     '<span class="tag"><i></i>配电房 <b>'+nLoad+'</b> 个</span>'+
     '<span class="tag '+(nDead?'bad':'ok')+'"><i></i>失电配电房 <b>'+nDead+'</b> 个</span>'+
-    '<span class="tag '+(SIM.paired?'warn':'ok')+'"><i></i>运行方式 <b>'+(SIM.paired?'两电源并列':(LOOP?'合环运行':'开环运行'))+'</b></span>'+
+    '<span class="tag '+(SIM.paired?'warn':'ok')+'"><i></i>运行方式 <b>'+modeText()+'</b></span>'+
     (FAULT?'<span class="tag warn"><i></i>故障演练中 <b>'+esc(FAULT.label||'')+'</b></span>':'');
   var chk=[], K=function(lv,t){ chk.push('<span class="al '+(lv||'')+'">'+t+'</span>'); };
-  if(SIM.paired) K('bad','告警：甲、乙两站电源已并列 —— 应立即拉开一处联络/环网开关');
-  else K('ok','无双电源并列，满足开环运行');
+  var pnames=SRC.filter(function(x){ return !DEADSRC[x]; }).map(function(x){ return DEV[x].name; });
+  if(SIM.paired) K('bad','告警：'+pnames.join('、')+' 两站电源已并列运行 —— 应立即拉开一处联络 / 环网开关');
   if(nDead) K('bad','失电配电房 '+nDead+' 个：'+esc(dead.slice(0,4).join('、'))+(dead.length>4?' …':''));
   else K('ok','全部配电房正常供电');
-  if(nIso) K('warn','失电开关站 '+nIso+' 座（两回进线均无电）');
-  var loopy=!!(LAYOUTS[TOPO.kind]||{}).loop;
-  TOPO.rings.forEach(function(pre){ if(ringOpen(pre)===0)
-    K(loopy?'ok':'warn', loopy?('环网 '+pre+' 合环运行（母联断开、两供电分区互为备用）')
-                          :('环网 '+pre+' 未开环（闭环运行，需开一处环网开关）')); });
+  if(nIso) K('warn','失电开关站 '+nIso+' 座（两段母线均无电）');
+  var ts=tieStats(), openRing=openRingCount();
+  if(TOPO.rings.length){
+    if(openRing===0) K('ok','环网 '+TOPO.rings.join('、')+' 合环运行：环网由同一电源的两回出线构成，不构成两电源并列');
+    else K('warn','环网 '+TOPO.rings.join('、')+' 开环运行：当前共有 '+openRing+' 处分位开关（开环点）');
+  }
+  if(ts.tot){
+    if(ts.shut===0) K('', ts.tot+' 座开关站母联全部分位（常开），两供电分区互为备用');
+    else if(ts.shut===ts.tot) K(SIM.paired?'bad':'', ts.tot+' 座开关站母联合上'+(SIM.paired?'（两电源已并列）':''));
+    else K('warn', ts.shut+' / '+ts.tot+' 座开关站母联合上（其余分位）');
+  }
   if(TOPO.radial) K('warn','单辐射接线：无联络通道，故障段下游须停电待修复');
   if(nSp) K('','预留/备用出线间隔 '+nSp+' 个（未接线）');
   if(FAULT) K('warn','已设置故障点：'+esc(FAULT.label)+'（① 模拟 ② 隔离 ③ 恢复）');
@@ -2207,7 +2415,7 @@ function panels(){
            ' · Ⅱ段母线：'+(secLive(d.id,2)?'<i class="ok">带电</i>':'<i class="bad">失电</i>')+
            ' · 母联 '+(T(d.id,'bt')&&T(d.id,'bt').sw?'<i class="ok">合</i>':'<i class="warn">分</i>'))
         : ('母线：'+(EN[d.id+':bus']?'<i class="ok">带电</i>':'<i class="bad">失电</i>')))+
-      ' · 所属：'+(TOPO.secColor?(d.type==='sta'?'两花瓣共用':'花瓣Ⅱ'):(d.pet==='b'?'花瓣Ⅱ':'花瓣Ⅰ'))+'</div>';
+      ' · 所属：'+ownerLabel(d)+'</div>';
     if(d.type!=='ld'){
       h+='<div class="kv" style="margin:5px 0 2px">开关清单（断开影响 = 通断分析）</div>';
       d.terms.forEach(function(t){
@@ -2264,7 +2472,7 @@ window.__api={snap:snap,load:load,DEV:DEV,WIRES:WIRES,simulate:simulate,T:T,impa
   TOPO:function(){return TOPO;},loadTopo:loadTopo,zoomFit:zoomFit,Z:function(){return Z;},
   sel:function(){return SEL;},selSet:function(k,id){SEL={kind:k,id:id};},copy:actCopy,paste:actPaste,zoomFit2:zoomFit,
   tp:tp,dirW:dirW,term:findTermObj,mode:function(){return {OUT:OUT,LOOP:LOOP};},
-  applyModes:applyModes,actLoop:actLoop};
+  applyModes:applyModes,actLoop:actLoop,paint:paint,ownerLabel:ownerLabel};
 })();
 </script>
 </body>
