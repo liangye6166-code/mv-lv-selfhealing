@@ -2035,8 +2035,9 @@ function panels(){
     d.terms.forEach(function(t){
       if(!t.sw){ nOpen++; if(t.tie) nTie++; }
       if(!used[id+':'+t.id]&&d.type==='sta'&&t.k==='sp') nSp++;
-      if(t.k==='load'){ nLoad++; if(!EN[id+':'+t.id]){ nDead++; dead.push(d.name); } }
     });
+    /* 配电房按“座”统计：双回路进线，任一回带电即视为不停电 */
+    if(d.type==='ld'){ nLoad++; if(!ldLive(id)){ nDead++; dead.push(d.name); } }
     if(d.type==='sta'&&!liveOf(id)) nIso++;
   });
   var nSta=ORDER.filter(function(i){ return DEV[i].type==='sta'; }).length;
