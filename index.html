@@ -1629,10 +1629,11 @@ function doRestore(){
   push(); paint();
 }
 function clearFault(){
-  var pre=FAULT&&FAULT.pre;
+  var pre=FAULT&&FAULT.pre, keep=SEL;
   FAULT=null; setTl(0);
   if(pre) load(JSON.parse(pre));
   else { simulate(); render(); panels(); }
+  if(keep&&(DEV[keep.id]||findWire(keep.id))){ SEL=keep; simulate(); render(); panels(); }
 }
 
 /* ================= 故障场景清单 + 自动演示 ================= */
