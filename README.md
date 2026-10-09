@@ -15,6 +15,22 @@ python3 -m http.server 8080
 # 然后访问 http://localhost:8080/
 ```
 
+## 公网预览（分享给同事）
+
+仓库根目录的 `index.html` 是零依赖单文件，直接丢到任意静态托管即可。临时分享用内置脚本：
+
+```bash
+bash tools/public-preview.sh
+```
+
+脚本会在本机 `127.0.0.1:8099` 起一个只暴露 `index.html` 的静态站点，再用
+**Cloudflare 快速隧道**（免登录）映射到公网，终端会打印形如
+`https://xxx.trycloudflare.com` 的地址，把它发给别人即可打开。
+
+- 隧道地址是**随机生成**的，脚本结束即失效，重跑会换新地址。
+- 想用固定域名 / 长期在线，改用 Cloudflare **命名隧道**（需登录账号）或部署到 GitHub Pages / Vercel。
+- `.public/` 只是站点根目录（内含指向 `index.html` 的符号链接），已加入 `.gitignore`。
+
 ## 界面布局
 
 ```
