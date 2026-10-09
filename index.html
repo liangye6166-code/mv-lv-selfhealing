@@ -306,7 +306,7 @@ A2 母线故障 | A2"></textarea>
           <span><svg width="40" height="18"><line x1="2" y1="9" x2="15" y2="9" stroke="#1d4ed8" stroke-width="2.6"/><line x1="25" y1="9" x2="38" y2="9" stroke="#0d9488" stroke-width="2.6"/><rect x="16" y="6" width="3.4" height="6" fill="#5b7083"/><rect x="21.5" y="6" width="3.4" height="6" fill="#e8590c"/><line x1="6" y1="2" x2="6" y2="9" stroke="#1d4ed8" stroke-width="1.6"/><line x1="11" y1="2" x2="11" y2="9" stroke="#1d4ed8" stroke-width="1.6"/><line x1="29" y1="2" x2="29" y2="9" stroke="#0d9488" stroke-width="1.6"/><line x1="34" y1="2" x2="34" y2="9" stroke="#0d9488" stroke-width="1.6"/></svg>开关站（单母线分段 + 母联）</span>
           <span><svg width="30" height="18"><line x1="15" y1="2" x2="15" y2="16" stroke="#334155" stroke-width="1.6"/><rect x="11" y="5" width="8" height="10" rx="1.2" fill="#334155"/><rect x="6.5" y="7" width="4" height="6" rx="1" fill="#334155"/><rect x="19.5" y="7" width="4" height="6" rx="1" fill="#334155"/></svg>线路终端（电缆终端头）</span>
           <span><svg width="26" height="18"><line x1="13" y1="3" x2="13" y2="15" stroke="#334155" stroke-width="1.6"/><rect x="9" y="7" width="8" height="4" rx="1" fill="#fff" stroke="#334155" stroke-width="1.3"/><line x1="6" y1="5" x2="6" y2="13" stroke="#334155" stroke-width="1.4"/></svg>母线终端</span>
-          <span><svg width="26" height="18"><rect x="4" y="7" width="14" height="8" rx="1" fill="#fff" stroke="#1d4ed8" stroke-width="1.4"/><path d="M3 7 L11 1.5 L19 7 Z" fill="#dbe7ff" stroke="#1d4ed8" stroke-width="1.2"/><line x1="8" y1="15" x2="8" y2="11" stroke="#1d4ed8" stroke-width="1.4"/><line x1="14" y1="15" x2="14" y2="11" stroke="#1d4ed8" stroke-width="1.4"/></svg>配电房（用户 · 双回路）</span>
+          <span><svg width="26" height="18"><line x1="10" y1="1" x2="10" y2="5" stroke="#1d4ed8" stroke-width="1.5"/><line x1="16" y1="1" x2="16" y2="5" stroke="#1d4ed8" stroke-width="1.5"/><path d="M4 5 L22 5 L13 16 Z" fill="#dbe7ff" stroke="#1d4ed8" stroke-width="1.3" stroke-linejoin="round"/></svg>负荷（配电房 · 双回路）</span>
           <span><svg width="24" height="18"><line x1="2" y1="9" x2="22" y2="9" stroke="#1d4ed8" stroke-width="2"/><rect x="8" y="4" width="8" height="11" rx="1.5" fill="#1d4ed8" stroke="#1d4ed8" stroke-width="1.2"/></svg>断路器合闸（实心）</span>
           <span><svg width="24" height="18"><line x1="2" y1="9" x2="7" y2="9" stroke="#db2777" stroke-width="2"/><line x1="17" y1="9" x2="22" y2="9" stroke="#db2777" stroke-width="2"/><rect x="8" y="4" width="8" height="11" rx="1.5" fill="#fff" stroke="#db2777" stroke-width="1.5" transform="rotate(-30 12 9)"/></svg>断路器分闸（空心）</span>
           <span><svg width="28" height="18"><line x1="2" y1="9" x2="26" y2="9" stroke="#e8590c" stroke-width="2" stroke-dasharray="6 4"/></svg>联络开关（常开）</span>
@@ -377,15 +377,15 @@ var SZ=.80;                     /* 图元统一缩放（变电站保持 1） */
 function staTerms(){
   return [
     /* Ⅰ段母线：用户 2 回（朝外） + 环网 2 回（朝内） */
-    {id:'u1', n:'Ⅰ段用户出线1', k:'ld', sec:1, dir:[0,-1], bx:-58,by:0, tx:-58,ty:-46},
-    {id:'u2', n:'Ⅰ段用户出线2', k:'ld', sec:1, dir:[0,-1], bx:-40,by:0, tx:-40,ty:-46},
-    {id:'A',  n:'Ⅰ段环网进线', k:'in', sec:1, dir:[0, 1], bx:-58,by:0, tx:-58,ty: 62},
-    {id:'B',  n:'Ⅰ段环网出线', k:'sp', sec:1, dir:[0, 1], bx:-40,by:0, tx:-40,ty: 62},
+    {id:'u1', n:'Ⅰ段用户出线1', k:'ld', sec:1, dir:[0,-1], bx:-52,by:0, tx:-52,ty:-46},
+    {id:'u2', n:'Ⅰ段用户出线2', k:'ld', sec:1, dir:[0,-1], bx:-36,by:0, tx:-36,ty:-46},
+    {id:'A',  n:'Ⅰ段环网进线', k:'in', sec:1, dir:[0, 1], bx:-52,by:0, tx:-52,ty: 62},
+    {id:'B',  n:'Ⅰ段环网出线', k:'sp', sec:1, dir:[0, 1], bx:-36,by:0, tx:-36,ty: 62},
     /* Ⅱ段母线：环网 2 回（朝内） + 用户 2 回（朝外） */
-    {id:'C',  n:'Ⅱ段环网出线', k:'sp', sec:2, dir:[0, 1], bx: 40,by:0, tx: 40,ty: 62},
-    {id:'D',  n:'Ⅱ段环网进线', k:'in', sec:2, dir:[0, 1], bx: 58,by:0, tx: 58,ty: 62},
-    {id:'u3', n:'Ⅱ段用户出线1', k:'ld', sec:2, dir:[0,-1], bx: 40,by:0, tx: 40,ty:-46},
-    {id:'u4', n:'Ⅱ段用户出线2', k:'ld', sec:2, dir:[0,-1], bx: 58,by:0, tx: 58,ty:-46},
+    {id:'C',  n:'Ⅱ段环网出线', k:'sp', sec:2, dir:[0, 1], bx: 36,by:0, tx: 36,ty: 62},
+    {id:'D',  n:'Ⅱ段环网进线', k:'in', sec:2, dir:[0, 1], bx: 52,by:0, tx: 52,ty: 62},
+    {id:'u3', n:'Ⅱ段用户出线1', k:'ld', sec:2, dir:[0,-1], bx: 36,by:0, tx: 36,ty:-46},
+    {id:'u4', n:'Ⅱ段用户出线2', k:'ld', sec:2, dir:[0,-1], bx: 52,by:0, tx: 52,ty:-46},
     /* 母联（分段）开关：连接 Ⅰ段 ↔ Ⅱ段，横向置于两段母线之间 */
     {id:'bt', n:'母联开关（Ⅰ/Ⅱ段联络）', k:'tie', sec:0, dir:[0,0], bx:-12,by:0, tx:12,ty:0, sw:false}
   ];
@@ -470,11 +470,11 @@ var LAYOUTS={
     花瓣Ⅱ（青）= 庙前变两回出线，走上排 Ⅱ段 → 纵向联络 → 下排 Ⅱ段 → 回庙前变
     两花瓣在每站母联处相切（母联常开，互为备用） */
  petal2:{name:'双花瓣（9 开关站）',desc:'永福变 / 庙前变 各两回出线 · 两花瓣互为备用',
-   rings:['A'],src:['SUBA','SUBB'],secColor:true,curveTrunk:true,
+   rings:['A'],src:['SUBA','SUBB'],secColor:true,trunkGlow:true,
    loop:true,openPts:[],tieOpen:true,
    build:function(){
-     mkSub('SUBA','永福变 10 kV Ⅰ段母线',150,410,false,-34,34,['众成H646线','礼贤H643线']);
-     mkSub('SUBB','庙前变 10 kV Ⅰ段母线',1620,410,true,-34,34,['朱白H194线','方严H195线']);
+     mkSub('SUBA','永福变 10 kV Ⅰ段母线',150,410,false,-34,34,['永福变出线1','永福变出线2']);
+     mkSub('SUBB','庙前变 10 kV Ⅰ段母线',1620,410,true,-34,34,['庙前变出线1','庙前变出线2']);
      mkStas([['A1','学术开关站',390,240,0],['A2','启航开关站',630,240,0],['A3','合寓开关站',870,240,0],
              ['A4','仓泽开关站',1110,240,0],['A5','泊云开关站',1350,240,0]],'a');
      mkStas([['B1','昌源开关站',510,580,1],['B2','云美开关站',750,580,1],
@@ -482,23 +482,23 @@ var LAYOUTS={
      /* 上排：Ⅰ段自左向右、Ⅱ段自右向左；下排相反 —— 据此标注进/出线间隔 */
      ['A1','A2','A3','A4','A5'].forEach(function(i){ ringRoles(i,1,-1); });
      ['B1','B2','B3','B4'].forEach(function(i){ ringRoles(i,-1,1); });
-     /* 花瓣Ⅰ（永福变）：众成H646线 → 上排 Ⅰ段 → 泊云站纵向联络 → 下排 Ⅰ段 → 礼贤H643线 */
+     /* 花瓣Ⅰ（永福变）：永福变出线1 → 上排 Ⅰ段 → 泊云站纵向联络 → 下排 Ⅰ段 → 永福变出线2 */
      chain([['SUBA','f1','A1','A'],['A1','B','A2','A'],['A2','B','A3','A'],['A3','B','A4','A'],
             ['A4','B','A5','A'],['A5','B','B4','B'],['B4','A','B3','B'],['B3','A','B2','B'],
             ['B2','A','B1','B'],['B1','A','SUBA','f2']]);
-     /* 花瓣Ⅱ（庙前变）：朱白H194线 → 上排 Ⅱ段 → 学术站纵向联络 → 下排 Ⅱ段 → 方严H195线 */
+     /* 花瓣Ⅱ（庙前变）：庙前变出线1 → 上排 Ⅱ段 → 学术站纵向联络 → 下排 Ⅱ段 → 庙前变出线2 */
      chainB([['SUBB','f1','A5','D'],['A5','C','A4','D'],['A4','C','A3','D'],['A3','C','A2','D'],
             ['A2','C','A1','D']],-22);
      chainB([['B1','D','B2','C'],['B2','D','B3','C'],['B3','D','B4','C'],['B4','D','SUBB','f2']],22);
      chain([['A1','C','B1','C']]);
-     TOPO.badges=[{x:272,y:-52,t:'花瓣Ⅰ · 永福变（蓝）',
-        s:'众成H646线 ⇒ 上排 Ⅰ段 ⇒ 纵向联络 ⇒ 下排 Ⅰ段 ⇒ 礼贤H643线 · {MODE}',op:'A3',c:'a'},
-                  {x:1462,y:-52,t:'花瓣Ⅱ · 庙前变（青）',
-        s:'朱白H194线 ⇒ 上排 Ⅱ段 ⇒ 纵向联络 ⇒ 下排 Ⅱ段 ⇒ 方严H195线 · {MODE}',op:'A3',c:'b'}];
+     TOPO.badges=[{x:392,y:-52,t:'花瓣Ⅰ · 永福变（蓝）',
+        s:'永福变出线1 ⇒ 上排 Ⅰ段 ⇒ 纵向联络 ⇒ 下排 Ⅰ段 ⇒ 永福变出线2 · {MODE}',op:'A3',c:'a'},
+                  {x:1188,y:-52,t:'花瓣Ⅱ · 庙前变（青）',
+        s:'庙前变出线1 ⇒ 上排 Ⅱ段 ⇒ 纵向联络 ⇒ 下排 Ⅱ段 ⇒ 庙前变出线2 · {MODE}',op:'A3',c:'b'}];
    }},
  /* ── 单花瓣：一座变电站、一片花瓣环 ── */
  petal1:{name:'单花瓣',desc:'一座变电站 · 一片花瓣环 · 5 站串联 · 站内单母线分段',
-   rings:['A'],src:['SUBA'],curveTrunk:true,loop:true,openPts:[],tieOpen:false,
+   rings:['A'],src:['SUBA'],trunkGlow:true,loop:true,openPts:[],tieOpen:false,
    build:function(){
      mkSub('SUBA','变电站甲 10 kV Ⅰ段母线',150,410,false,-16,16,['甲线1','甲线2']);
      mkStas([['A1','开关站 A1',390,410,0],['A2','开关站 A2',630,410,0],['A3','开关站 A3',870,410,0],
@@ -512,7 +512,7 @@ var LAYOUTS={
    }},
  /* ── 双环网：两个环网、环间联络 ── */
  ring2:{name:'双环网',desc:'两座变电站 · 两个环网 · 环间联络开关',
-   rings:['A','B'],src:['SUBA','SUBB'],curveTrunk:true,
+   rings:['A','B'],src:['SUBA','SUBB'],trunkGlow:true,
    openPts:[['A3','B'],['B3','B']],tieOpen:false,loop:false,
    build:function(){
      mkSub('SUBA','变电站甲 10 kV Ⅰ段母线',150,240,false,-16,16,['甲线1','甲线2']);
@@ -534,7 +534,7 @@ var LAYOUTS={
    }},
  /* ── 单环网：一个环、开环运行 ── */
  ring1:{name:'单环网',desc:'一座变电站 · 一个环网 · 开环运行（开环点 A3）',
-   rings:['A'],src:['SUBA'],curveTrunk:true,openPts:[['A3','B']],tieOpen:false,loop:false,
+   rings:['A'],src:['SUBA'],trunkGlow:true,openPts:[['A3','B']],tieOpen:false,loop:false,
    build:function(){
      mkSub('SUBA','变电站甲 10 kV Ⅰ段母线',150,410,false,-16,16,['甲线1','甲线2']);
      mkStas([['A1','开关站 A1',430,410,0],['A2','开关站 A2',690,410,0],
@@ -562,7 +562,7 @@ var LAYOUTS={
 /* ================= 数据 ================= */
 var DEV={},ORDER=[],WIRES=[],SEQ=0,UNDO=[],SEL=null,EN={},SRC=[],SIM={},FLOW={},DEADSRC={},
     FAULT=null,drag=null,PREV=null,CLIP=null,SHOW_FLOW=true,SHOW_GLOW=true;
-var TOPO={kind:'petal2',name:'双花瓣',desc:'',rings:['A','B'],badges:[],radial:false,secColor:false,curveTrunk:false};
+var TOPO={kind:'petal2',name:'双花瓣',desc:'',rings:['A','B'],badges:[],radial:false,secColor:false,trunkGlow:false};
 var OUTLINES=[];
 
 function addDev(o){ o.terms=o.terms.map(function(t){ if(t.sw===undefined) t.sw=true; return t; });
@@ -613,7 +613,7 @@ function build(){
   for(var _k in DEV) delete DEV[_k];
   var L=LAYOUTS[TOPO.kind]||LAYOUTS.petal2;
   TOPO.name=L.name; TOPO.desc=L.desc; TOPO.rings=L.rings.slice(); TOPO.radial=!!L.radial;
-  TOPO.secColor=!!L.secColor; TOPO.curveTrunk=!!L.curveTrunk;
+  TOPO.secColor=!!L.secColor; TOPO.trunkGlow=!!L.trunkGlow;
   TOPO.badges=[];
   L.build();
   placeLoads();
@@ -745,37 +745,10 @@ function pathOf(pts,r){
   var e=pts[pts.length-1];
   return d+' L'+num(e[0])+' '+num(e[1]);
 }
-function arcRoute(A,da,B,db,by){
-  var s=24, A2=[A[0]+da[0]*s,A[1]+da[1]*s], B2=[B[0]+db[0]*s,B[1]+db[1]*s];
-  var up=da[1]<0, span=Math.abs(B2[0]-A2[0]);
-  var bulge=Math.min(58,Math.max(6,span*0.34))+(by||0);
-  var peak=(up?Math.min(A2[1],B2[1]):Math.max(A2[1],B2[1]))+(up?-bulge:bulge);
-  var cy=(8*peak-A2[1]-B2[1])/6;
-  var C1=[A2[0]+(B2[0]-A2[0])*0.28,cy], C2=[B2[0]-(B2[0]-A2[0])*0.28,cy];
-  var pts=[A];
-  for(var i=0;i<=16;i++){ var t=i/16,u=1-t,u2=u*u,t2=t*t;
-    pts.push([u2*u*A2[0]+3*u2*t*C1[0]+3*u*t2*C2[0]+t2*t*B2[0],
-              u2*u*A2[1]+3*u2*t*C1[1]+3*u*t2*C2[1]+t2*t*B2[1]]); }
-  pts.push(B);
-  var d='M'+num(A[0])+' '+num(A[1])+' L'+num(A2[0])+' '+num(A2[1])+
-    ' C'+num(C1[0])+' '+num(C1[1])+' '+num(C2[0])+' '+num(C2[1])+' '+num(B2[0])+' '+num(B2[1])+
-    ' L'+num(B[0])+' '+num(B[1]);
-  return {pts:pts,d:d,curved:true};
-}
-function petalRoute(A,da,B,db,sign){
-  var s=26, A2=[A[0]+da[0]*s,A[1]+da[1]*s], B2=[B[0]+db[0]*s,B[1]+db[1]*s];
-  var span=Math.abs(B2[0]-A2[0]);
-  var bulge=Math.min(240,Math.max(90,span*0.20));
-  var peak=Math.round((A2[1]+B2[1])/2+sign*bulge);
-  var pts=[A,A2,[A2[0],peak],[B2[0],peak],B2,B];
-  return {pts:pts,d:pathOf(pts,48),curved:true};
-}
 function route(A,da,B,db,bias,curve,bow){
   var bx=(bias&&bias[0])||0, by=(bias&&bias[1])||0, s=24;
   var A2=[A[0]+da[0]*s,A[1]+da[1]*s], B2=[B[0]+db[0]*s,B[1]+db[1]*s];
   var ha=Math.abs(da[0])>Math.abs(da[1]), hb=Math.abs(db[0])>Math.abs(db[1]);
-  if(bow&&ha&&hb&&da[0]*db[0]>0&&Math.abs(A2[1]-B2[1])<48) return petalRoute(A,da,B,db,bow);
-  if(curve&&!ha&&!hb&&da[1]*db[1]>0) return arcRoute(A,da,B,db,by);
   var pts;
   if(!ha&&!hb){                                   /* 两端竖直：进线—进线 / 出线—配电房 */
     var ahead=(B[1]-A[1])*da[1]>0;
@@ -806,19 +779,14 @@ function route(A,da,B,db,bias,curve,bow){
   }
   pts.splice(pts.length-1,0,B2);   /* 沿端子方向直进直出，保证线一定落到节点上 */
   pts=simplify(pts);
-  return {pts:pts,d:pathOf(pts,11)};
+  return {pts:pts,d:pathOf(pts,6)};
 }
 function wpath(w){
   var dA=DEV[w.a.d], dB=DEV[w.b.d], tA=T(w.a.d,w.a.t), tB=T(w.b.d,w.b.t);
   if(!dA||!dB||!tA||!tB) return null;
   var A=tp(dA,tA), B=tp(dB,tB);
-  var isTie=(tA.tie||tB.tie);
-  var curve=!!TOPO.curveTrunk&&!isTie&&dA.type!=='ld'&&dB.type!=='ld';
-  var bow=0;
-  if(curve){ var s1=(tA&&tA.sec)||0, s2=(tB&&tB.sec)||0;
-    var sc=(dA.type==='sub')?s2:((dB.type==='sub')?s1:(s2||s1));
-    if(sc===1) bow=-1; else if(sc===2) bow=1; }
-  var r=route(A,dirW(dA,tA),B,dirW(dB,tB),w.bias||[0,0],curve,bow);
+  /* 全部按横平竖直的折线走线（专业电气图惯例），只保留 R 角 */
+  var r=route(A,dirW(dA,tA),B,dirW(dB,tB),w.bias||[0,0],false,0);
   r.A=A; r.B=B;
   return r;
 }
@@ -1005,7 +973,7 @@ function render(){
   });
 
   /* 花瓣柔光带：沿环网干线自动生成，形状与电缆完全一致 */
-  if(TOPO.curveTrunk){
+  if(TOPO.trunkGlow){
     var gB=el('g',{});
     WIRES.forEach(function(w){
       var tA=T(w.a.d,w.a.t), tB=T(w.b.d,w.b.t); if(!tA||!tB) return;
@@ -1014,8 +982,8 @@ function render(){
       var g0=wpath(w); if(!g0) return;
       var dbg1=(tA&&tA.sec)||0, dbg2=(tB&&tB.sec)||0;
       var col=(TOPO.secColor&&((DEV[w.a.d].type==='sub'?dbg2:(DEV[w.b.d].type==='sub'?dbg1:(dbg2||dbg1)))===2))?COL.b:COL.a;
-      gB.appendChild(el('path',{d:g0.d,fill:'none',stroke:col,'stroke-width':g0.curved?42:26,
-        'stroke-opacity':g0.curved?.09:.075,'stroke-linecap':'round','stroke-linejoin':'round',
+      gB.appendChild(el('path',{d:g0.d,fill:'none',stroke:col,'stroke-width':13,
+        'stroke-opacity':.10,'stroke-linecap':'round','stroke-linejoin':'round',
         'pointer-events':'none'}));
     });
     SVG.appendChild(gB);
@@ -1035,8 +1003,8 @@ function render(){
       pet=(sc===2)?'b':'a'; }
     var col=isFlt?COL.flt:(isTie?COL.tie:(live?(pet==='b'?COL.b:COL.a):COL.dead));
     var isTrunk=(DEV[w.a.d].type!=='ld'&&DEV[w.b.d].type!=='ld');
-    if(SHOW_GLOW&&live&&isTrunk) gG.appendChild(el('path',{d:g0.d,fill:'none',stroke:col,'stroke-width':3.2,
-      opacity:isFlt?.7:.42,filter:'url(#glow)','pointer-events':'none',
+    if(SHOW_GLOW&&live&&isTrunk) gG.appendChild(el('path',{d:g0.d,fill:'none',stroke:col,'stroke-width':2.6,
+      opacity:isFlt?.6:.32,filter:'url(#glow)','pointer-events':'none',
       'stroke-linecap':'round','stroke-linejoin':'round'}));
     var hit=el('path',{d:g0.d,fill:'none',stroke:'transparent','stroke-width':14});
     hit.style.cursor='move';
@@ -1051,7 +1019,7 @@ function render(){
             ox:(w.bias||[0,0])[0],oy:(w.bias||[0,0])[1]};
       paint(); });
     gW.appendChild(hit);
-    var at={d:g0.d,fill:'none',stroke:col,'stroke-width':(live||isFlt)?2.3:2,'stroke-linecap':'round',
+    var at={d:g0.d,fill:'none',stroke:col,'stroke-width':(live||isFlt)?1.7:1.5,'stroke-linecap':'round',
       'stroke-linejoin':'round','pointer-events':'none'};
     if(isTie) at['stroke-dasharray']='9 5';
     if(isFlt) at['stroke-dasharray']='7 4';
@@ -1128,10 +1096,11 @@ function render(){
         g.appendChild(hit);
         markSwitch(g,bx,my,id,t.id);
         if(FAULT) MK.push([id,t.id,bx,my]);
-        /* 环网间隔标注“进 / 出线”，用户间隔标注“户” */
-        var tag=(t.k==='in')?'进':(t.k==='sp'?'出':(t.k==='ld'?'户':''));
-        if(tag) txt(g,bx+(bx<0?-9*k:9*k),my+3*k,tag,
-          {size:7.4,weight:700,fill:live?col:COL.muted,halo:2.4});
+        /* 环网间隔在外端头标注“进 / 出线”；用户间隔由三角形负荷符号标示，不再重复文字。
+           标注移到端子一侧、避开启闭器矩形，防止文字相互压盖 */
+        var tag=(t.k==='in')?'进':(t.k==='sp'?'出':'');
+        if(tag) txt(g,X+(bx<0?-9.5*k:9.5*k),Y+3.6*k,tag,
+          {size:7.4,weight:700,fill:live?col:COL.muted,halo:2.8});
         var tc=circ(g,X,Y,3.4*k,col); hitTerm(g,tc,id,t.id);
       });
     } else if(d.type==='sub'){
@@ -1164,13 +1133,14 @@ function render(){
           seg=(ht&&ht.sec===2)?'b':'a',
           root=((TOPO.secColor?seg:(d.pet==='b'))==='b')?COL.b:COL.a, lk=SZ;
       var v1=EN[id+':t1'], v2=EN[id+':t2'], lv=v1||v2, pc=lv?root:COL.dead;
-      ln(g,-12*lk,-30*lk,-12*lk,-20*lk,v1?root:COL.dead,2);
-      ln(g, 12*lk,-30*lk, 12*lk,-20*lk,v2?root:COL.dead,2);
-      g.appendChild(el('rect',{x:-22*lk,y:-20*lk,width:44*lk,height:32*lk,rx:2,
-        fill:lv?'#fff':'#f1f5f9',stroke:pc,'stroke-width':1.6}));
-      g.appendChild(el('path',{d:'M'+(-24*lk)+' '+(12*lk)+' L 0 '+(30*lk)+' L '+(24*lk)+' '+(12*lk)+' Z',
-        fill:lv?((TOPO.secColor&&seg==='b')?COL.bLite:COL.aLite):'#eef2f7',stroke:pc,'stroke-width':1.6}));
-      txt(g,0,-3*lk,seg==='b'?'Ⅱ':'Ⅰ',{size:9,weight:700,fill:pc,halo:0});
+      /* 双回路进线引下线 */
+      ln(g,-12*lk,-30*lk,-12*lk,-15*lk,v1?root:COL.dead,1.7);
+      ln(g, 12*lk,-30*lk, 12*lk,-15*lk,v2?root:COL.dead,1.7);
+      /* 负荷：三角形符号（顶点朝外） */
+      g.appendChild(el('path',{d:'M'+(-19*lk)+' '+(-15*lk)+' L '+(19*lk)+' '+(-15*lk)+' L 0 '+(19*lk)+' Z',
+        fill:lv?((TOPO.secColor&&seg==='b')?COL.bLite:COL.aLite):'#eef2f7',stroke:pc,
+        'stroke-width':1.7,'stroke-linejoin':'round'}));
+      txt(g,0,-4*lk,seg==='b'?'Ⅱ':'Ⅰ',{size:8.4,weight:700,fill:pc,halo:0});
       var t1=circ(g,-12*lk,-30*lk,3.2*lk,v1?root:COL.dead); hitTerm(g,t1,id,'t1');
       var t2=circ(g, 12*lk,-30*lk,3.2*lk,v2?root:COL.dead); hitTerm(g,t2,id,'t2');
     }
@@ -1536,16 +1506,16 @@ function showKeys(){ openDlg('快捷键一览',
   '<tr><td class="k">右键</td><td>弹出图元 / 电缆菜单</td></tr></table>'); }
 function showDoc(){ openDlg('接线约定 / 图元画法',
   '<h4>图元（与典型设计图一致）</h4><table>'+
-  '<tr><td class="k">变电站</td><td><b>正方形</b> + 竖置 10 kV 母线；同一段母线出 2 回馈线，馈线端头画<b>线路终端</b>并标注线路名称（如众成H646线）</td></tr>'+
+  '<tr><td class="k">变电站</td><td><b>正方形</b> + 竖置 10 kV 母线；同一段母线出 2 回馈线，馈线端头画<b>线路终端</b>并标注示意性馈线编号（如 永福变出线1）</td></tr>'+
   '<tr><td class="k">开关站</td><td><b>单母线分段环网柜</b>（不旋转，可上下镜像）：Ⅰ段母线（蓝）与 Ⅱ段母线（青）共线横置，中间为<b>母联</b>（隔离开关常合 + 断路器）；母线外端为<b>母线终端</b>。每段母线 4 个间隔：<b>2 回用户出线（朝外）+ 2 回环网间隔（朝内，一进一出）</b>。断路器<b>实心=合位、空心斜置=分位</b></td></tr>'+
-  '<tr><td class="k">配电房</td><td>用户小房子，<b>双回路进线</b>（两回引自本站同一段母线的两回用户出线间隔），任一回带电即不停电；房内 Ⅰ/Ⅱ 标示所属母线段</td></tr>'+
+  '<tr><td class="k">配电房</td><td><b>三角形负荷符号</b>，<b>双回路进线</b>（两回引自本站同一段母线的两回用户出线间隔），任一回带电即不停电；符号内 Ⅰ/Ⅱ 标示所属母线段</td></tr>'+
   '<tr><td class="k">终端</td><td><b>线路终端</b>=实心端子 + 两侧箭头（电缆终端头）；<b>母线终端</b>=短横 + 竖向端头</td></tr>'+
   '<tr><td class="k">联络开关</td><td>橙色虚线，常开（两个环网 / 两片花瓣之间的联络）</td></tr>'+
   '</table>'+
   '<h4>双花瓣接线（教科书方式）</h4><table>'+
   '<tr><td class="k">布置</td><td>两座变电站分列左右，中间是<b>两排共 9 座开关站</b>：上排 5 座（用户朝上）、下排 4 座（用户朝下），环网间隔朝两排之间的通道</td></tr>'+
-  '<tr><td class="k">花瓣Ⅰ</td><td>永福变同一段母线的 2 回出线：众成H646线 ⇒ 上排各站 <b>Ⅰ段</b> ⇒ 泊云站纵向联络 ⇒ 下排各站 <b>Ⅰ段</b> ⇒ 礼贤H643线，成环运行</td></tr>'+
-  '<tr><td class="k">花瓣Ⅱ</td><td>庙前变 2 回出线：朱白H194线 ⇒ 上排各站 <b>Ⅱ段</b> ⇒ 学术站纵向联络 ⇒ 下排各站 <b>Ⅱ段</b> ⇒ 方严H195线，成环运行</td></tr>'+
+  '<tr><td class="k">花瓣Ⅰ</td><td>永福变同一段母线的 2 回出线：永福变出线1 ⇒ 上排各站 <b>Ⅰ段</b> ⇒ 泊云站纵向联络 ⇒ 下排各站 <b>Ⅰ段</b> ⇒ 永福变出线2，成环运行</td></tr>'+
+  '<tr><td class="k">花瓣Ⅱ</td><td>庙前变 2 回出线：庙前变出线1 ⇒ 上排各站 <b>Ⅱ段</b> ⇒ 学术站纵向联络 ⇒ 下排各站 <b>Ⅱ段</b> ⇒ 庙前变出线2，成环运行</td></tr>'+
   '<tr><td class="k">相切</td><td>两片花瓣在每个开关站经<b>母联（分段）开关</b>相切；正常方式母联断开，两片花瓣互为备用（备自投）</td></tr>'+
   '<tr><td class="k">故障</td><td>线路任一段故障：差动保护瞬时切除该电缆两端开关，非故障段不停电；母线故障：跳开该段母线全部开关并闭锁母联备自投</td></tr>'+
   '<tr><td class="k">转供</td><td>该段两路进线全失（或电源全停）时母联备自投动作：断开两路进线开关、合上母联，由另一段母线接带其负荷</td></tr>'+
@@ -1871,17 +1841,17 @@ function wiresAtTerm(d,t){
 }
 function scenesDefault(){ return [
   {c:'一、线路（电缆）故障 · 合环运行',
-   n:'L1 花瓣Ⅰ 永福变出线1 电缆故障（众成H646线 → 学术站 Ⅰ段）', t:mkW('SUBA:f1','A1:A'),
-   d:'光纤差动保护瞬时跳开故障电缆两端开关。花瓣Ⅰ 另一侧（礼贤H643线）继续供电，非故障段不受影响。'},
+   n:'L1 花瓣Ⅰ 永福变出线1 电缆故障（永福变出线1 → 学术站 Ⅰ段）', t:mkW('SUBA:f1','A1:A'),
+   d:'光纤差动保护瞬时跳开故障电缆两端开关。花瓣Ⅰ 另一侧（永福变出线2）继续供电，非故障段不受影响。'},
   {c:'一、线路（电缆）故障 · 合环运行',
    n:'L2 花瓣Ⅰ 上排主干故障（学术 → 启航 Ⅰ段）', t:mkW('A1:B','A2:A'),
-   d:'花瓣Ⅰ 环网中间段故障，两端断路器跳开；学术侧由众成H646线供电、启航侧由礼贤H643线经下排供电，全线不停电。'},
+   d:'花瓣Ⅰ 环网中间段故障，两端断路器跳开；学术侧由永福变出线1供电、启航侧由永福变出线2经下排供电，全线不停电。'},
   {c:'一、线路（电缆）故障 · 合环运行',
    n:'L3 花瓣Ⅱ 上排主干故障（泊云 → 仓泽 Ⅱ段）', t:mkW('A5:C','A4:D'),
-   d:'花瓣Ⅱ 环网中间段故障，两端断路器跳开；泊云侧由朱白H194线供电、仓泽侧由方严H195线经下排供电。'},
+   d:'花瓣Ⅱ 环网中间段故障，两端断路器跳开；泊云侧由庙前变出线1供电、仓泽侧由庙前变出线2经下排供电。'},
   {c:'一、线路（电缆）故障 · 合环运行',
-   n:'L4 花瓣Ⅱ 庙前变出线2 电缆故障（方严H195线 → 枫翠站 Ⅱ段）', t:mkW('SUBB:f2','B4:D'),
-   d:'庙前变出线2 故障，两端开关跳开；花瓣Ⅱ 由朱白H194线单侧带全环（经纵向联络），非故障段不受影响。'},
+   n:'L4 花瓣Ⅱ 庙前变出线2 电缆故障（庙前变出线2 → 枫翠站 Ⅱ段）', t:mkW('SUBB:f2','B4:D'),
+   d:'庙前变出线2 故障，两端开关跳开；花瓣Ⅱ 由庙前变出线1单侧带全环（经纵向联络），非故障段不受影响。'},
   {c:'一、线路（电缆）故障 · 合环运行',
    n:'L6 花瓣间纵向联络电缆故障（泊云 Ⅰ段 ↔ 枫翠 Ⅰ段）', t:mkW('A5:B','B4:B'),
    d:'两排之间的纵向联络电缆故障并被两端切除；上下两排 Ⅰ段由此解列，但每排仍由永福变两回出线分别供电，不失负荷。'},
