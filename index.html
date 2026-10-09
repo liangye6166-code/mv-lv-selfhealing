@@ -524,6 +524,7 @@ function placeLoads(){
   var grp={};
   ORDER.forEach(function(id){ var d=DEV[id];
     if(d.type!=='ld'||!d.host||!DEV[d.host]) return;
+    if(d.moved) return;                       /* 手动摆放过位置的配电房不再自动吸附 */
     var h=DEV[d.host], t=findTermObj(d.host,d.hterm); if(!t) return;
     var p=tp(h,t), up=(((h.flip?-1:1)*t.ty)<0);   /* 端子在世界坐标里朝上 → 配电房挂在上方 */
     var g=grp[d.host]||(grp[d.host]=[]);
@@ -1202,8 +1203,13 @@ SVG.addEventListener('mousemove',function(ev){
   if(!drag) return;
   var w=toWorld(ev), wx=w[0], wy=w[1];
   if(drag.kind==='dev'){
-    var d=DEV[drag.id];
-    d.x=Math.round((wx-drag.dx)/5)*5; d.y=Math.round((wy-drag.dy)/5)*5;
+    var d=DEV[drag.id], nx=Math.round((wx-drag.dx)/5)*5, ny=Math.round((wy-drag.dy)/5)*5;
+    var ddx=nx-d.x, ddy=ny-d.y;
+    d.x=nx; d.y=ny;
+    /* 拖动开关站 / 变电站时，挂在它上面的配电房整体跟随 */
+    if(d.type==='ld') d.moved=1;
+    if(ddx||ddy) ORDER.forEach(function(k){ var o=DEV[k];
+      if(o.type==='ld'&&o.host===d.id){ o.x+=ddx; o.y+=ddy; o.moved=1; } });
     refresh();
   } else if(drag.kind==='link'){ PREV=[wx,wy]; refresh(); }
   else if(drag.kind==='wire'){
@@ -1239,7 +1245,7 @@ function delDev(id){ push();
 function push(){ UNDO.push(JSON.stringify(snap())); if(UNDO.length>80) UNDO.shift(); }
 function snap(){ return {DEV:ORDER.map(function(id){ var d=DEV[id];
     return {id:d.id,type:d.type,name:d.name,x:d.x,y:d.y,rot:d.rot,flip:!!d.flip,flip0:!!d.flip0,
-      color:d.color,pet:d.pet,host:d.host,hterm:d.hterm,
+      color:d.color,pet:d.pet,host:d.host,hterm:d.hterm,moved:!!d.moved,
       terms:d.terms.map(function(t){ return {id:t.id,n:t.n,k:t.k,sec:t.sec,bx:t.bx,by:t.by,
         tx:t.tx,ty:t.ty,sw:t.sw,tie:!!t.tie,dir:t.dir}; })};}),
     WIRES:WIRES.map(function(w){ return {a:w.a,b:w.b,bias:w.bias||[0,0]}; }),
