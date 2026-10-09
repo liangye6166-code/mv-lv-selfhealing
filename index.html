@@ -341,7 +341,7 @@
           <span><svg width="28" height="18"><line x1="2" y1="9" x2="18" y2="9" stroke="#1d4ed8" stroke-width="2.6"/><rect x="17" y="6" width="6" height="6" rx="1.2" fill="#1d4ed8"/></svg>母线终端（端头封堵）</span>
           <span><svg width="26" height="18"><line x1="13" y1="17" x2="13" y2="11" stroke="#1d4ed8" stroke-width="1.5"/><path d="M5 11 L21 11 L13 2 Z" fill="#dbe7ff" stroke="#1d4ed8" stroke-width="1.3" stroke-linejoin="round"/><circle cx="13" cy="13.4" r="1.7" fill="#1d4ed8"/></svg>负荷（每回用户出线一个三角形）</span>
           <span><svg width="24" height="18"><line x1="2" y1="9" x2="22" y2="9" stroke="#1d4ed8" stroke-width="2"/><rect x="8" y="4" width="8" height="11" rx="1.5" fill="#1d4ed8" stroke="#1d4ed8" stroke-width="1.2"/></svg>断路器合闸（实心）</span>
-          <span><svg width="24" height="18"><line x1="2" y1="9" x2="7" y2="9" stroke="#db2777" stroke-width="2"/><line x1="17" y1="9" x2="22" y2="9" stroke="#db2777" stroke-width="2"/><rect x="8" y="4" width="8" height="11" rx="1.5" fill="#fff" stroke="#db2777" stroke-width="1.5" transform="rotate(-30 12 9)"/></svg>断路器分闸（空心）</span>
+          <span><svg width="24" height="18"><line x1="2" y1="9" x2="7" y2="9" stroke="#db2777" stroke-width="2"/><line x1="17" y1="9" x2="22" y2="9" stroke="#db2777" stroke-width="2"/><rect x="8" y="4" width="8" height="11" rx="1.5" fill="#fff" stroke="#db2777" stroke-width="1.5"/></svg>断路器分闸（空心）</span>
           <span><svg width="56" height="18"><line x1="1" y1="9" x2="7" y2="9" stroke="#e8590c" stroke-width="2"/><rect x="7" y="4" width="16" height="10" rx="1.8" fill="#fff" stroke="#db2777" stroke-width="1.6"/><line x1="23" y1="9" x2="29" y2="9" stroke="#e8590c" stroke-width="2"/><rect x="31" y="4" width="16" height="10" rx="1.8" fill="#0f8a4a" stroke="#0f8a4a" stroke-width="1.6"/><line x1="47" y1="9" x2="55" y2="9" stroke="#e8590c" stroke-width="2"/></svg>母联（长条方框：空心 = 分位/断开，实心 = 合位）</span>
           <span><svg width="28" height="18"><line x1="2" y1="9" x2="26" y2="9" stroke="#2f9e63" stroke-width="2"/><path d="M14 9 L8 6 L8 12 Z" fill="#2f9e63"/></svg>潮流方向</span>
           <span><svg width="28" height="18"><line x1="2" y1="9" x2="26" y2="9" stroke="#b9c4d2" stroke-width="2"/></svg>失电（无压）</span>
@@ -1176,8 +1176,7 @@ function render(){
         if(t.sw) g.appendChild(el('rect',{x:bx-swW/2,y:my-swH/2,width:swW,height:swH,rx:1.6,
           fill:col,stroke:col,'stroke-width':1.2}));
         else g.appendChild(el('rect',{x:bx-swW/2,y:my-swH/2,width:swW,height:swH,rx:1.6,
-          fill:'#fff',stroke:COL.open,'stroke-width':1.2,
-          transform:'rotate(-30 '+bx+' '+my+')'}));
+          fill:'#fff',stroke:COL.open,'stroke-width':1.2}));      /* 分位=空心，不再歪头 */
         var hit=el('rect',{x:bx-11*k,y:my-15*k,width:22*k,height:30*k,fill:'transparent'});
         hit.style.cursor='pointer';
         hit.addEventListener('mousedown',function(ev){ ev.stopPropagation(); hideCtx(); toggle(id,t.id); });
@@ -1187,8 +1186,14 @@ function render(){
         /* 环网间隔在外端头标注“进 / 出线”；用户间隔由三角形负荷符号标示，不再重复文字。
            标注移到端子一侧、避开启闭器矩形，防止文字相互压盖 */
         var tag=(t.k==='in')?'进':(t.k==='sp'?'出':'');
-        if(tag) txt(g,X+(bx<0?-9.5*k:9.5*k),Y+3.6*k,tag,
-          {size:7.4,weight:700,fill:live?col:COL.muted,halo:2.8,flip:d.flip});
+        if(tag){
+          /* 同一段的两回环网间隔相邻，各自的“进/出”标到远离同伴的一侧，避免压住相邻间隔的电缆 */
+          var mate=null;
+          d.terms.forEach(function(o){ if(o!==t&&o.sec===t.sec&&(o.k==='in'||o.k==='sp')) mate=o; });
+          var tsg=mate?(t.bx>mate.bx?1:-1):(bx<0?-1:1);
+          txt(g,X+tsg*11*k,Y+9*k,tag,
+            {size:7.4,weight:700,fill:live?col:COL.muted,halo:2.8,flip:d.flip});
+        }
         var tc=circ(g,X,Y,3.4*k,col); hitTerm(g,tc,id,t.id);
       });
     } else if(d.type==='sub'){
@@ -1204,8 +1209,7 @@ function render(){
         if(t.sw) g.appendChild(el('rect',{x:mx-8,y:t.ty-4.5,width:16,height:9,rx:1.4,
           fill:col,stroke:col,'stroke-width':1.2}));
         else g.appendChild(el('rect',{x:mx-8,y:t.ty-4.5,width:16,height:9,rx:1.4,
-          fill:'#fff',stroke:COL.open,'stroke-width':1.2,
-          transform:'rotate(-30 '+mx+' '+t.ty+')'}));
+          fill:'#fff',stroke:COL.open,'stroke-width':1.2}));      /* 分位=空心，不再歪头 */
         var hit=el('rect',{x:mx-14,y:t.ty-12,width:28,height:24,fill:'transparent'});
         hit.style.cursor='pointer';
         hit.addEventListener('mousedown',function(ev){ ev.stopPropagation(); hideCtx(); toggle(id,t.id); });
@@ -1599,7 +1603,7 @@ function showKeys(){ openDlg('快捷键一览',
 function showDoc(){ openDlg('接线约定 / 图元画法',
   '<h4>图元（与典型设计图一致）</h4><table>'+
   '<tr><td class="k">变电站</td><td><b>正方形</b> + 竖置 10 kV 母线；同一段母线出 2 回馈线，馈线端头画<b>线路终端</b>并标注示意性馈线编号（如 变电站1出线1）</td></tr>'+
-  '<tr><td class="k">开关站</td><td><b>单母线分段环网柜</b>（不旋转，可上下镜像）：Ⅰ段母线（蓝）与 Ⅱ段母线（青）共线横置，中间为<b>母联</b>（分段开关：两端静触头 + 刀闸，分位时刀闸斜置抬起）；母线外端为<b>母线终端</b>（端头实心方块）。每段母线 4 个间隔：<b>2 回用户出线（朝外）+ 2 回环网间隔（朝内，一进一出）</b>。断路器<b>实心=合位、空心斜置=分位</b></td></tr>'+
+  '<tr><td class="k">开关站</td><td><b>单母线分段环网柜</b>（不旋转，可上下镜像）：Ⅰ段母线（蓝）与 Ⅱ段母线（青）共线横置，中间为<b>母联</b>（分段开关：横置长条方框，空心=分位、实心=合位）；母线外端为<b>母线终端</b>（端头实心方块）。每段母线 4 个间隔：<b>2 回用户出线（朝外）+ 2 回环网间隔（朝内，一进一出）</b>。断路器<b>实心=合位、空心=分位</b></td></tr>'+
   '<tr><td class="k">配电房</td><td><b>每一回用户出线各自带一个三角形负荷符号</b>（双回路进线，两回引自本站同一段母线的两回用户出线间隔），任一回带电即不停电；符号取所属母线段颜色（Ⅰ 段蓝 / Ⅱ 段青）</td></tr>'+
   '<tr><td class="k">终端</td><td><b>线路终端</b>=实心端子 + 两侧箭头（电缆终端头）；<b>母线终端</b>=短横 + 竖向端头</td></tr>'+
   '<tr><td class="k">联络开关</td><td>橙色虚线，常开（两个环网 / 两片花瓣之间的联络）</td></tr>'+
