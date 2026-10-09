@@ -339,7 +339,7 @@
           <span><svg width="40" height="18"><line x1="2" y1="9" x2="15" y2="9" stroke="#1d4ed8" stroke-width="2.6"/><line x1="25" y1="9" x2="38" y2="9" stroke="#0d9488" stroke-width="2.6"/><rect x="16" y="6" width="3.4" height="6" fill="#5b7083"/><rect x="21.5" y="6" width="3.4" height="6" fill="#e8590c"/><line x1="6" y1="2" x2="6" y2="9" stroke="#1d4ed8" stroke-width="1.6"/><line x1="11" y1="2" x2="11" y2="9" stroke="#1d4ed8" stroke-width="1.6"/><line x1="29" y1="2" x2="29" y2="9" stroke="#0d9488" stroke-width="1.6"/><line x1="34" y1="2" x2="34" y2="9" stroke="#0d9488" stroke-width="1.6"/></svg>开关站（单母线分段 + 母联）</span>
           <span><svg width="30" height="18"><line x1="2" y1="9" x2="17" y2="9" stroke="#334155" stroke-width="1.8"/><circle cx="21" cy="9" r="5" fill="#fff" stroke="#334155" stroke-width="1.5"/><circle cx="21" cy="9" r="2.8" fill="#334155"/></svg>电缆终端头（电缆末端端子）</span>
           <span><svg width="28" height="18"><line x1="2" y1="9" x2="18" y2="9" stroke="#1d4ed8" stroke-width="2.6"/><rect x="17" y="6" width="6" height="6" rx="1.2" fill="#1d4ed8"/></svg>母线终端（端头封堵）</span>
-          <span><svg width="26" height="18"><line x1="13" y1="17" x2="13" y2="11" stroke="#1d4ed8" stroke-width="1.5"/><path d="M5 11 L21 11 L13 2 Z" fill="#dbe7ff" stroke="#1d4ed8" stroke-width="1.3" stroke-linejoin="round"/><circle cx="13" cy="13.4" r="1.7" fill="#1d4ed8"/></svg>负荷（每回用户出线一个三角形）</span>
+          <span><svg width="26" height="18"><line x1="13" y1="17" x2="13" y2="11" stroke="#1d4ed8" stroke-width="1.5"/><path d="M5 11 L21 11 L13 2 Z" fill="#dbe7ff" stroke="#1d4ed8" stroke-width="1.3" stroke-linejoin="round"/><circle cx="13" cy="13.4" r="1.7" fill="#1d4ed8"/></svg>负荷（一回路一个三角形，独立负荷）</span>
           <span><svg width="24" height="18"><line x1="2" y1="9" x2="22" y2="9" stroke="#1d4ed8" stroke-width="2"/><rect x="8" y="4" width="8" height="11" rx="1.5" fill="#1d4ed8" stroke="#1d4ed8" stroke-width="1.2"/></svg>断路器合闸（实心）</span>
           <span><svg width="24" height="18"><line x1="2" y1="9" x2="7" y2="9" stroke="#db2777" stroke-width="2"/><line x1="17" y1="9" x2="22" y2="9" stroke="#db2777" stroke-width="2"/><rect x="8" y="4" width="8" height="11" rx="1.5" fill="#fff" stroke="#db2777" stroke-width="1.5"/></svg>断路器分闸（空心）</span>
           <span><svg width="56" height="18"><line x1="1" y1="9" x2="7" y2="9" stroke="#e8590c" stroke-width="2"/><rect x="7" y="4" width="16" height="10" rx="1.8" fill="#fff" stroke="#db2777" stroke-width="1.6"/><line x1="23" y1="9" x2="29" y2="9" stroke="#e8590c" stroke-width="2"/><rect x="31" y="4" width="16" height="10" rx="1.8" fill="#0f8a4a" stroke="#0f8a4a" stroke-width="1.6"/><line x1="47" y1="9" x2="55" y2="9" stroke="#e8590c" stroke-width="2"/></svg>母联（长条方框：空心 = 分位/断开，实心 = 合位）</span>
@@ -398,7 +398,7 @@ var COL={a:'#1d4ed8',b:'#0d9488',tie:'#e8590c',ink:'#12263f',muted:'#5b7083',
          aLite:'#dbe7ff',bLite:'#d5f0ea',flt:'#e03131'};
 var TYPE={sub:'变电站（10 kV 电源，正方形图元）',
   sta:'开关站（单母线分段环网柜：Ⅰ/Ⅱ段母线 + 母联；每段 2 回用户出线 + 2 回环网间隔）',
-  ld:'配电房（用户，双回路进线）'};
+  ld:'配电房（用户负荷，单电源）'};
 var SZ=.80, LDN=0;                /* 配电房示意编号计数器 */                     /* 图元统一缩放（变电站保持 1） */
 
 /* ================= 图元定义 =================
@@ -446,11 +446,10 @@ function subTerms(mir,y1,y2,ln){ var s=mir?-1:1;
     {id:'f2',n:ln[1]||'10kV 出线2',ln:ln[1]||'',k:'line',sec:0,dir:[s,0],bx:0,by:y2,tx:95*s,ty:y2}
   ];
 }
-/* 配电房（用户）：双回路进线，两回均引自本站同一段母线的用户出线间隔 */
+/* 配电房（用户）：每个用户出线间隔 = 一个独立负荷（单电源、一个三角形） */
 function ldTerms(){ return [
-  {id:'t1',n:'进线1',k:'load',dir:[0,-1],bx:-12,by:-24,tx:-12,ty:-30},
-  {id:'t2',n:'进线2',k:'load',dir:[0,-1],bx: 12,by:-24,tx: 12,ty:-30}]; }
-function ldLive(id){ return !!(EN[id+':t1']||EN[id+':t2']); }
+  {id:'t1',n:'进线',k:'load',dir:[0,-1],bx:0,by:-24,tx:0,ty:-30}]; }
+function ldLive(id){ return !!EN[id+':t1']; }
 
 /* ================= 场景几何 ================= */
 var SAX=180,SBX=1420,SY=430,TIP=95,MID=800;
@@ -477,16 +476,16 @@ function mkSub(id,name,x,y,mir,y1,y2,ln){ addDev({id:id,type:'sub',name:name,x:x
   color:COL.sub,terms:subTerms(!!mir,y1,y2,ln)}); }
 function mkSta(id,name,x,y,flip,pet){ addDev({id:id,type:'sta',name:name||('开关站 '+id),x:x,y:y,rot:0,
   flip:flip?1:0,flip0:flip?1:0,pet:pet||'a',color:(pet==='b')?COL.b:COL.a,terms:staTerms()}); }
-/* 每座开关站 2 个配电房：分别由本站 Ⅰ段 / Ⅱ段的两回用户出线间隔双回路供电 */
+/* 每座开关站 4 个配电房：一个用户出线间隔 = 一个独立负荷（单电源，各自计量） */
 function mkLoads(id){ var d=DEV[id];
-  [['u1','u2','_U1','Ⅰ'],['u3','u4','_U2','Ⅱ']].forEach(function(o){
-    var t1=findTermObj(id,o[0]), t2=findTermObj(id,o[1]); if(!t1||!t2) return;
-    var p1=tp(d,t1), p2=tp(d,t2), up=(p1[1]<d.y);
-    addDev({id:id+o[2],type:'ld',
-      x:(p1[0]+p2[0])/2, y:(up?Math.min(p1[1],p2[1]):Math.max(p1[1],p2[1]))+(up?-DROP:DROP),
-      rot:0,flip:up?1:0,pet:d.pet,color:COL.sub,host:id,hterm:o[0],ht2:o[1],terms:ldTerms(),
+  ['u1','u2','u3','u4'].forEach(function(k){
+    var t=findTermObj(id,k); if(!t) return;
+    var pt=tp(d,t), up=(pt[1]<d.y), lid=id+'_'+k;
+    addDev({id:lid,type:'ld',
+      x:pt[0], y:pt[1]+(up?-DROP:DROP),
+      rot:0,flip:up?1:0,pet:d.pet,color:COL.sub,host:id,hterm:k,terms:ldTerms(),
       name:'配电房'+(++LDN)});
-    wire([id,o[0]],[id+o[2],'t1']); wire([id,o[1]],[id+o[2],'t2']); }); }
+    wire([id,k],[lid,'t1']); }); }
 function chain(list){ list.forEach(function(c){ wire([c[0],c[1]],[c[2],c[3]]); }); }
 /* 给指定电缆设置走线偏置（拖动即可调整，落盘后可复现） */
 function chainB(list,by){ list.forEach(function(c){ wire([c[0],c[1]],[c[2],c[3]]);
@@ -614,21 +613,22 @@ function dirW(d,t){ var r=d.rot*Math.PI/180,c=Math.cos(r),s=Math.sin(r),lx=t.dir
 function kOf(d){ return d.type==='sub'?1:SZ; }
 function tp(d,t){ var k=kOf(d); return xf(d,t.tx*k,t.ty*k); }
 var DROP=108, MINSEP=46;
-/* 配电房自动挂到本站“用户出线间隔”的端子外侧；dual=双回路，取两回端子中点居中 */
+/* 配电房自动挂到本站“用户出线间隔”的端子外侧；同一站的多个负荷沿横向拉开 */
 function placeLoads(){
   var grp={};
   ORDER.forEach(function(id){ var d=DEV[id];
     if(d.type!=='ld'||!d.host||!DEV[d.host]) return;
     if(d.moved) return;                       /* 手动摆放过位置的配电房不再自动吸附 */
     var h=DEV[d.host], t=findTermObj(d.host,d.hterm); if(!t) return;
-    var t2=d.ht2?findTermObj(d.host,d.ht2):null, p=tp(h,t), p2=t2?tp(h,t2):p;
-    var up=(p[1]<h.y);                        /* 端子在世界坐标里朝上 → 配电房挂在上方 */
-    var g=grp[d.host]||(grp[d.host]=[]);
-    g.push({d:d,x:(p[0]+p2[0])/2,y:(up?Math.min(p[1],p2[1]):Math.max(p[1],p2[1]))+(up?-DROP:DROP),up:up});
+    var p=tp(h,t), up=(p[1]<h.y);             /* 端子在世界坐标里朝上 → 配电房挂在上方 */
+    (grp[d.host]=grp[d.host]||[]).push({d:d,x:p[0],x0:p[0],y:p[1]+(up?-DROP:DROP),up:up});
   });
-  for(var k in grp){ var a=grp[k].sort(function(u,v){ return u.x-v.x; });
-    if(a.length===2&&a[1].x-a[0].x<MINSEP){
-      var m=(a[0].x+a[1].x)/2; a[0].x=m-MINSEP/2; a[1].x=m+MINSEP/2; }
+  for(var k in grp){ var a=grp[k].sort(function(u,v){ return u.x0-v.x0; }), i, n=a.length;
+    if(n>1){                                  /* 向右推开保证最小间距，再整体居中 */
+      for(i=1;i<n;i++) if(a[i].x-a[i-1].x<MINSEP) a[i].x=a[i-1].x+MINSEP;
+      var c0=(a[0].x+a[n-1].x)/2, cm=(a[0].x0+a[n-1].x0)/2, dx=cm-c0;
+      a.forEach(function(o){ o.x+=dx; });
+    }
     /* 配电房自身朝向：端子朝上/pin在下，端子朝下/pin在上 */
     a.forEach(function(o){ o.d.x=Math.round(o.x); o.d.y=Math.round(o.y);
       o.d.flip=o.up?1:0; }); }
@@ -1222,22 +1222,16 @@ function render(){
         var tc=lineTerm(g,t.tx,t.ty,col,t.ln,sgn); hitTerm(g,tc,id,t.id);
       });
     } else {
-      /* 配电房（用户）：双回路进线，分别引自本站同一段母线的两回用户出线间隔 */
+      /* 配电房（用户）：一个用户出线间隔 = 一个独立负荷（一个三角形，顶点背向开关站） */
       var hs=DEV[d.host], ht=hs?findTermObj(d.host,d.hterm):null,
           seg=(ht&&ht.sec===2)?'b':'a',
           root=((TOPO.secColor?seg:(d.pet==='b'))==='b')?COL.b:COL.a, lk=SZ;
-      var v1=EN[id+':t1'], v2=EN[id+':t2'],
-          lite=(TOPO.secColor&&seg==='b')?COL.bLite:COL.aLite;
-      /* 双回路进线：每一回用户出线各自引出一个三角形负荷符号（顶点背向开关站） */
-      [[-12,v1],[12,v2]].forEach(function(o){
-        var sx=o[0], vv=o[1], c=vv?root:COL.dead;
-        ln(g,sx*lk,-30*lk,sx*lk,-14*lk,c,1.7);
-        g.appendChild(el('path',{d:'M'+((sx-8.5)*lk)+' '+(-14*lk)+' L '+((sx+8.5)*lk)+' '+(-14*lk)+
-          ' L '+(sx*lk)+' '+(4*lk)+' Z',
-          fill:vv?lite:'#eef2f7',stroke:c,'stroke-width':1.6,'stroke-linejoin':'round'}));
-      });
-      var t1=circ(g,-12*lk,-30*lk,3.2*lk,v1?root:COL.dead); hitTerm(g,t1,id,'t1');
-      var t2=circ(g, 12*lk,-30*lk,3.2*lk,v2?root:COL.dead); hitTerm(g,t2,id,'t2');
+      var v1=EN[id+':t1'], lite=(TOPO.secColor&&seg==='b')?COL.bLite:COL.aLite;
+      var c1=v1?root:COL.dead;
+      ln(g,0,-30*lk,0,-14*lk,c1,1.7);
+      g.appendChild(el('path',{d:'M'+(-7.8*lk)+' '+(-14*lk)+' L '+(7.8*lk)+' '+(-14*lk)+
+        ' L 0 '+(4*lk)+' Z',fill:v1?lite:'#eef2f7',stroke:c1,'stroke-width':1.6,'stroke-linejoin':'round'}));
+      var t1=circ(g,0,-30*lk,3.2*lk,c1); hitTerm(g,t1,id,'t1');
     }
     g.addEventListener('mousedown',function(ev){ devDown(id,ev); });
     g.addEventListener('contextmenu',function(ev){ devCtx(id,ev); });
@@ -1606,7 +1600,7 @@ function showDoc(){ openDlg('接线约定 / 图元画法',
   '<h4>图元（与典型设计图一致）</h4><table>'+
   '<tr><td class="k">变电站</td><td><b>正方形</b> + 竖置 10 kV 母线；同一段母线出 2 回馈线，馈线末端为<b>电缆终端头</b>（端子）并标注示意性馈线编号（如 变电站1出线1）</td></tr>'+
   '<tr><td class="k">开关站</td><td><b>单母线分段环网柜</b>（不旋转，可上下镜像）：Ⅰ段母线（蓝）与 Ⅱ段母线（青）共线横置，中间为<b>母联</b>（分段开关：横置长条方框，空心=分位、实心=合位）；母线外端为<b>母线终端</b>（端头实心方块）。每段母线 4 个间隔：<b>2 回用户出线（朝外）+ 2 回环网间隔（朝内，一进一出）</b>。断路器<b>实心=合位、空心=分位</b></td></tr>'+
-  '<tr><td class="k">配电房</td><td><b>每一回用户出线各自带一个三角形负荷符号</b>（双回路进线，两回引自本站同一段母线的两回用户出线间隔），任一回带电即不停电；符号取所属母线段颜色（Ⅰ 段蓝 / Ⅱ 段青）</td></tr>'+
+  '<tr><td class="k">配电房（负荷）</td><td><b>每一回用户出线间隔 = 一个独立负荷</b>，各画<b>一个三角形</b>（顶点背向开关站、单电源）；符号取所属母线段颜色（Ⅰ 段蓝 / Ⅱ 段青），<b>该回路失电即转灰</b></td></tr>'+
   '<tr><td class="k">终端</td><td><b>电缆终端头</b>=电缆末端的端子（白环 + 实心圆）；<b>母线终端</b>=母线末端的实心小方块（端头封堵）</td></tr>'+
   '<tr><td class="k">联络开关</td><td>橙色虚线，常开（两个环网 / 两片花瓣之间的联络）</td></tr>'+
   '</table>'+
@@ -1827,7 +1821,7 @@ function setFault(){
   FAULT.bztArm=bztCandidates();                     /* ① 同时识别失压段 → 启动母联备自投 */
   var nd=deadLoads();
   FAULT.msg='① 保护动作：'+(esc?esc:('跳开 '+names.join('、')))+
-    (ldEnd?('，切除 '+ldEnd.name+' 的故障分支；该配电房为双回路供电，另一回路继续运行，用户不停电')
+    (ldEnd?('，切除 '+ldEnd.name+' 的分支电缆；该用户出线为单电源，所带负荷失电')
       :(nd?('，'+nd+' 个配电房失电'):
         '；故障区间已切除，非故障段继续供电（合环运行 + 差动保护两端切除，双花瓣的核心优势）'))+
     (FAULT.lockTie?('；本站 Ⅰ段母线故障，母联备自投被闭锁（不得向故障母线送电）')
@@ -1987,8 +1981,8 @@ function scenesDefault(){ return [
    n:'L6 花瓣间纵向联络电缆故障（开关站5 Ⅰ段 ↔ 开关站9 Ⅰ段）', t:mkW('A5:B','B4:B'),
    d:'两排之间的纵向联络电缆故障并被两端切除；上下两排 Ⅰ段由此解列，但每排仍由变电站1 两回出线分别供电，不失负荷。'},
   {c:'一、线路（电缆）故障 · 合环运行',
-   n:'L5 配电房分支电缆故障（开关站1 Ⅰ段 → 配电房 回路1）', t:mkW('A1:u1','A1_U1:t1'),
-   d:'分支电缆无保护，由开关站1 Ⅰ段用户出线开关切除；配电房因是双回路，另一回路继续供电，用户不停电。'},
+   n:'L5 配电房分支电缆故障（开关站1 Ⅰ段 → 配电房1）', t:mkW('A1:u1','A1_u1:t1'),
+   d:'分支电缆无保护，由开关站1 Ⅰ段用户出线开关切除；该用户出线为单电源，所带配电房失电（须待修复）。'},
   {c:'二、开关站故障',
    n:'K1 开关站2 Ⅰ段母线故障（闭锁母联备自投）', t:{kind:'dev',id:'A2'},
    d:'母线差动保护跳开与该母线连接的全部进出线开关并闭锁母联自投；开关站2 Ⅱ段及其余各站不受影响。'},
@@ -2150,7 +2144,7 @@ function panels(){
       if(!t.sw){ nOpen++; if(t.tie) nTie++; }
       if(!used[id+':'+t.id]&&d.type==='sta'&&t.k==='sp') nSp++;
     });
-    /* 配电房按“座”统计：双回路进线，任一回带电即视为不停电 */
+    /* 每个用户出线间隔是一个独立负荷（一座配电房），该回路失电即计入失电 */
     if(d.type==='ld'){ nLoad++; if(!ldLive(id)){ nDead++; dead.push(d.name); } }
     if(d.type==='sta'&&!liveOf(id)) nIso++;
   });
