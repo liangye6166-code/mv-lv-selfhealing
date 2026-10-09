@@ -110,15 +110,33 @@
 
   /* ── 动作过程面板 ── */
   .act .ph{color:var(--muted);font-size:11.5px}
-  .act .st{display:flex;gap:9px;align-items:flex-start;padding:7px 0;border-bottom:1px dashed #eef1f6}
-  .act .st:last-child{border-bottom:0}
-  .act .no{flex:0 0 auto;width:19px;height:19px;border-radius:50%;color:#fff;font-size:11px;font-weight:700;
-    display:flex;align-items:center;justify-content:center;background:#c3cdda;margin-top:1px}
-  .act .no.n1{background:var(--flt)}.act .no.n2{background:var(--tie)}.act .no.n3{background:var(--live)}
-  .act .tx{min-width:0;font-size:11.5px;line-height:1.55;color:var(--ink)}
-  .act .tx b{display:block;font-size:11.5px;color:inherit}
-  .act .tx em{font-style:normal;color:var(--muted)}
-  .act .st.off .tx,.act .st.off .no{opacity:.45}
+  /* 竖向时间轴：t=0.00 s 为故障发生时刻 */
+  .act .tls{margin-top:8px}
+  .act .sts{display:grid;grid-template-columns:62px 14px 1fr;padding:5px 0;position:relative}
+  .act .sts .tt{grid-column:1;text-align:right;padding-right:9px;white-space:nowrap;
+    font:600 10px/1.7 ui-monospace,Menlo,Consolas,monospace;color:#8a99ab;font-variant-numeric:tabular-nums}
+  .act .sts .dd{grid-column:2;position:relative}
+  .act .sts .dd::before{content:'';position:absolute;left:0;top:4px;width:13px;height:13px;border-radius:50%;
+    background:#fff;border:2px solid #c3cdda;box-sizing:border-box;z-index:1}
+  .act .sts:not(:last-child) .dd::after{content:'';position:absolute;left:5.5px;top:17px;bottom:-6px;
+    width:2px;background:#e6ebf2}
+  .act .sts .tx{grid-column:3;min-width:0;font-size:11.5px;line-height:1.5;color:var(--muted)}
+  .act .sts .tx b{display:block;font-size:11.5px;color:inherit}
+  .act .sts .tx em{font-style:normal;color:var(--muted)}
+  /* 已发生：按下标着色 —— 正常运行/转供 = 绿，故障发生 = 红，隔离 = 橙 */
+  .act .sts.past.k-n .dd::before,.act .sts.cur.k-n .dd::before,
+  .act .sts.past.k-r .dd::before,.act .sts.cur.k-r .dd::before{background:var(--live);border-color:var(--live)}
+  .act .sts.past.k-f .dd::before,.act .sts.cur.k-f .dd::before{background:var(--flt);border-color:var(--flt)}
+  .act .sts.past.k-i .dd::before,.act .sts.cur.k-i .dd::before{background:var(--tie);border-color:var(--tie)}
+  .act .sts.past.k-n .tt,.act .sts.past.k-n .tx,.act .sts.past.k-r .tt,.act .sts.past.k-r .tx{color:var(--live)}
+  .act .sts.past.k-f .tt,.act .sts.cur.k-f .tt{color:var(--flt)}
+  .act .sts.past.k-f .tx,.act .sts.past.k-i .tx,.act .sts.cur .tx{color:var(--ink)}
+  .act .sts.past.k-i .tt,.act .sts.cur.k-i .tt{color:var(--tie)}
+  .act .sts.cur .tx b{font-weight:700}
+  .act .sts.cur.k-f .dd::before{box-shadow:0 0 0 3px rgba(224,49,49,.16)}
+  .act .sts.cur.k-i .dd::before{box-shadow:0 0 0 3px rgba(232,89,12,.16)}
+  .act .sts.cur.k-n .dd::before,.act .sts.cur.k-r .dd::before{box-shadow:0 0 0 3px rgba(15,138,74,.16)}
+  .act .sts.wait .tt,.act .sts.wait .tx{opacity:.55}
   .act .ft{margin-top:7px;padding-top:7px;border-top:1px solid #eef1f6;font-size:11.5px;font-weight:700}
 
   /* ── 对话框 ── */
@@ -174,11 +192,23 @@
   }
   select{font:inherit;font-size:12.5px;border:1px solid #cfd8e3;background:#f8fafc;width:100%;
     border-radius:8px;padding:5px 8px;color:var(--ink)}
-  .tl{display:flex;flex-direction:column;gap:4px;margin-top:8px}
-  .tl .chip{padding:4px 10px;border-radius:8px;border:1px solid #e6ebf2;background:#f8fafc;
-    color:var(--muted);font-size:11.5px}
-  .tl .chip.on{background:#12263f;border-color:#12263f;color:#fff;font-weight:700}
-  .tl .chip.done{background:#e8f5ee;border-color:#bcdfcd;color:#0f8a4a}
+  /* 动作过程：竖向时间轴（故障发生时刻 = 0.00 s，之前为正常运行） */
+  .tl{display:flex;flex-direction:column;margin-top:9px}
+  .tl .tli{display:flex;align-items:center;gap:9px;min-height:28px;position:relative}
+  .tl .tli:not(:last-child)::before{content:'';position:absolute;left:66px;
+    top:calc(50% + 6px);height:16px;width:2px;background:#e6ebf2}
+  .tl .tlt{flex:0 0 52px;text-align:right;font:600 10.5px/1 ui-monospace,Menlo,Consolas,monospace;
+    color:#8a99ab;font-variant-numeric:tabular-nums}
+  .tl .tld{flex:0 0 12px;width:12px;height:12px;border-radius:50%;background:#fff;
+    border:2px solid #cbd5e1;box-sizing:border-box}
+  .tl .tln{flex:1;font-size:11.5px;color:var(--muted)}
+  .tl .tli[data-s="1"] .tlt{color:#e03131}
+  .tl .tli.done .tld{background:#0f8a4a;border-color:#0f8a4a}
+  .tl .tli.done .tln{color:#0f8a4a}
+  .tl .tli.on .tld{background:#e03131;border-color:#e03131;box-shadow:0 0 0 3px rgba(224,49,49,.14)}
+  .tl .tli.on .tln{color:#12263f;font-weight:700}
+  .tl .tli[data-s="0"].done .tld,.tl .tli[data-s="0"].on .tld{background:#0f8a4a;border-color:#0f8a4a}
+  .tl .tli[data-s="0"].on .tld{box-shadow:0 0 0 3px rgba(15,138,74,.14)}
   .tlmsg{margin-top:7px;color:var(--muted);font-size:11.5px}
   .impbox{display:none;margin-top:8px}
   .impbox textarea{width:100%;height:76px;border:1px solid #cfd8e3;border-radius:8px;padding:7px 9px;
@@ -279,10 +309,10 @@
           <button id="bImpFault" class="mini">导入故障点…</button>
         </div>
         <div class="tl" id="tlRow">
-          <span class="chip on" data-s="0">正常运行</span>
-          <span class="chip" data-s="1">① 故障发生 · 保护动作</span>
-          <span class="chip" data-s="2">② 故障隔离</span>
-          <span class="chip" data-s="3">③ 转供恢复供电</span>
+          <div class="tli on" data-s="0"><span class="tlt">＜0.00 s</span><span class="tld"></span><span class="tln">正常运行</span></div>
+          <div class="tli" data-s="1"><span class="tlt">0.00 s</span><span class="tld"></span><span class="tln">① 故障发生 · 保护动作</span></div>
+          <div class="tli" data-s="2"><span class="tlt">+0.35 s</span><span class="tld"></span><span class="tln">② 故障隔离</span></div>
+          <div class="tli" data-s="3"><span class="tlt">+1.20 s</span><span class="tld"></span><span class="tln">③ 转供恢复供电</span></div>
         </div>
         <div class="tlmsg" id="tlMsg">尚未开始</div>
         <div class="impbox" id="impBox">
@@ -312,7 +342,7 @@
           <span><svg width="26" height="18"><line x1="13" y1="17" x2="13" y2="11" stroke="#1d4ed8" stroke-width="1.5"/><path d="M5 11 L21 11 L13 2 Z" fill="#dbe7ff" stroke="#1d4ed8" stroke-width="1.3" stroke-linejoin="round"/><circle cx="13" cy="13.4" r="1.7" fill="#1d4ed8"/></svg>负荷（每回用户出线一个三角形）</span>
           <span><svg width="24" height="18"><line x1="2" y1="9" x2="22" y2="9" stroke="#1d4ed8" stroke-width="2"/><rect x="8" y="4" width="8" height="11" rx="1.5" fill="#1d4ed8" stroke="#1d4ed8" stroke-width="1.2"/></svg>断路器合闸（实心）</span>
           <span><svg width="24" height="18"><line x1="2" y1="9" x2="7" y2="9" stroke="#db2777" stroke-width="2"/><line x1="17" y1="9" x2="22" y2="9" stroke="#db2777" stroke-width="2"/><rect x="8" y="4" width="8" height="11" rx="1.5" fill="#fff" stroke="#db2777" stroke-width="1.5" transform="rotate(-30 12 9)"/></svg>断路器分闸（空心）</span>
-          <span><svg width="34" height="18"><line x1="1" y1="13" x2="10" y2="13" stroke="#e8590c" stroke-width="2"/><line x1="24" y1="13" x2="33" y2="13" stroke="#e8590c" stroke-width="2"/><circle cx="10" cy="13" r="1.6" fill="#e8590c"/><circle cx="24" cy="13" r="1.6" fill="#e8590c"/><line x1="10" y1="13" x2="20" y2="4.5" stroke="#db2777" stroke-width="1.8"/></svg>母联（分段开关 · 分位 = 常开，两段互为备用）</span>
+          <span><svg width="52" height="18"><line x1="1" y1="9" x2="9" y2="9" stroke="#e8590c" stroke-width="2"/><rect x="9" y="3.5" width="11" height="11" rx="1.6" fill="#fff" stroke="#db2777" stroke-width="1.6"/><line x1="20" y1="9" x2="28" y2="9" stroke="#e8590c" stroke-width="2"/><rect x="30" y="3.5" width="11" height="11" rx="1.6" fill="#0f8a4a" stroke="#0f8a4a" stroke-width="1.6"/><line x1="41" y1="9" x2="50" y2="9" stroke="#e8590c" stroke-width="2"/></svg>母联（方框：空心 = 分位/断开，实心 = 合位）</span>
           <span><svg width="28" height="18"><line x1="2" y1="9" x2="26" y2="9" stroke="#2f9e63" stroke-width="2"/><path d="M14 9 L8 6 L8 12 Z" fill="#2f9e63"/></svg>潮流方向</span>
           <span><svg width="28" height="18"><line x1="2" y1="9" x2="26" y2="9" stroke="#b9c4d2" stroke-width="2"/></svg>失电（无压）</span>
           <span><svg width="22" height="18"><circle cx="11" cy="9" r="6" fill="#fff" stroke="#e03131" stroke-width="1.5" stroke-dasharray="3 3"/></svg>故障点 / 隔离点</span>
@@ -695,7 +725,8 @@ function flow(p,find){
   WIRES.forEach(function(w){ var a=w.a.d+':'+w.a.t, b=w.b.d+':'+w.b.t;
     add(a,b,w.id); add(b,a,w.id); });
   var depth={}, q=[];
-  SRC.forEach(function(s){ busKeys(s).forEach(function(bn){ depth[bn]=0; q.push(bn); }); });
+  SRC.forEach(function(s){ if(DEADSRC[s]) return;   /* 失电电源不再作为潮流起点 */
+    busKeys(s).forEach(function(bn){ depth[bn]=0; q.push(bn); }); });
   for(var i=0;i<q.length;i++){ var u=q[i];
     (adj[u]||[]).forEach(function(e){ if(depth[e[0]]===undefined&&p[e[0]]!==undefined){
       depth[e[0]]=depth[u]+1; q.push(e[0]); } }); }
@@ -703,6 +734,8 @@ function flow(p,find){
   WIRES.forEach(function(w){ var a=w.a.d+':'+w.a.t, b=w.b.d+':'+w.b.t;
     if(depth[a]===undefined||depth[b]===undefined) return;
     if(find(a)!==find(b)) return;
+    var ta=findTermObj(w.a.d,w.a.t), tb=findTermObj(w.b.d,w.b.t);
+    if((ta&&!ta.sw)||(tb&&!tb.sw)) return;          /* 端点开关分位 → 该段无电流，不画潮流箭头 */
     if(depth[a]<depth[b]) dir[w.id]=1; else if(depth[b]<depth[a]) dir[w.id]=-1; });
   return {depth:depth,dir:dir};
 }
@@ -895,6 +928,35 @@ function stepMark(g,x,y,n,col){
   g.appendChild(el('text',{x:x,y:y+4.1,'text-anchor':'middle','font-size':11.5,'font-weight':700,
     fill:'#fff'},str));
 }
+/* 步骤标记（①/②/③）自动避让：同一座站内多个标记按槽位向外散开，
+   并用细引线连回它标注的那台开关，避免互相压盖、看不清 */
+function placeStepMarks(g,marks){
+  var placed=[];
+  function hw(s){ return (s.length>1?12+s.length*7.4:22)/2+1.5; }
+  marks.forEach(function(m){
+    var w=hw(m.n), hh=12.5;
+    var sg=(m.y>m.cy)?1:((m.y<m.cy)?-1:-1);          /* 朝远离站中心的一侧散开 */
+    var lat=Math.abs(m.y-m.cy)<1;                    /* 母联（站中心）→ 标记走侧向，别压住方框 */
+    function free(x,y){ for(var i=0;i<placed.length;i++){ var p=placed[i];
+      if(Math.abs(x-p.x)<(w+p.w)&&Math.abs(y-p.y)<(hh+p.h)) return false; } return true; }
+    var base=lat?[[-30,-30],[30,-30],[-30,30],[30,30],[-52,-30],[52,-30],[-52,30],[52,30],
+                  [0,-56],[0,56],[-74,-30],[74,-30],[-30,-56],[30,-56],[-30,56],[30,56]]
+               :[[0,26],[20,30],[-20,30],[0,52],[20,56],[-20,56],[40,30],[-40,30],
+                 [0,78],[40,56],[-40,56],[20,82],[-20,82],[60,30],[-60,30],
+                 [0,104],[60,56],[-60,56],[40,82],[-40,82],[20,108],[-20,108]];
+    var x=m.x,y=m.y,ok=false;
+    for(var i=0;i<base.length;i++){ var cx=m.x+base[i][0], cy=m.y+base[i][1]*sg;
+      if(free(cx,cy)){ x=cx; y=cy; ok=true; break; } }
+    if(!ok){ for(var r=36;r<280&&!ok;r+=16) for(var a=-100;a<260;a+=20){
+      var ex=m.x+Math.cos(a*Math.PI/180)*r, ey=m.y+Math.sin(a*Math.PI/180)*r;
+      if(free(ex,ey)){ x=ex; y=ey; ok=true; break; } } }
+    if(x!==m.x||y!==m.y)
+      g.appendChild(el('line',{x1:m.x,y1:m.y,x2:x,y2:y,stroke:m.col,'stroke-width':1,
+        'stroke-dasharray':'2.4 2.4','stroke-opacity':.65,'stroke-linecap':'round'}));
+    placed.push({x:x,y:y,w:w,h:hh});
+    stepMark(g,x,y,m.n,m.col);
+  });
+}
 /* 动作过程（右侧面板，HTML 渲染） */
 function esc(x){ return String(x==null?'':x).replace(/[&<>"]/g,function(c){
   return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
@@ -902,31 +964,46 @@ function actionPanel(){
   var box=document.getElementById('pAct'); if(!box) return;
   if(!FAULT){ box.innerHTML='<div class="ph">未开始演练。在左侧「场景库」选择故障场景后点 <b>自动演示</b>，'+
     '或依次点 <b>① 模拟故障 → ② 隔离故障 → ③ 转供恢复</b> 单步执行。</div>'; return; }
+  /* 竖向时间轴：＜0.00 s 正常运行 → 0.00 s 故障发生 → 之后各步 */
   var rows=[];
-  function add(n,cls,title,det,on){ rows.push({n:n,cls:cls,title:title,det:det,on:on}); }
-  add(1,'n1','保护动作 · t≈0.10 s',
-      FAULT.tripped.length?('跳开 '+FAULT.tripped.map(kname).join('、')+
-        (FAULT.escalate?'（越级跳闸，本站全停）':'')):'无电源开关动作', true);
+  function add(t,title,det,on,c){ rows.push({t:t,title:title,det:det,on:on,c:c||'n'}); }
+  add('＜0.00 s','正常运行','故障前：环网合环运行、母联断开，全部配电房正常供电', true, 'n');
+  add('0.00 s','① 故障发生 · 保护动作',
+      (FAULT.tripped.length?('跳开 '+FAULT.tripped.map(kname).join('、')+
+        (FAULT.escalate?'（越级跳闸，本站全停）':'')):'无电源开关动作')+
+      (FAULT.lockTie?'；母联备自投被闭锁'
+        :((FAULT.bztArm&&FAULT.bztArm.length)?('；'+FAULT.bztArm.length+' 座开关站一段母线失压，母联备自投启动'):'')),
+      true, 'f');
   if(FAULT.tr){
     var rc=!!(FAULT.reclosed&&FAULT.reclosed.length);
-    add(2,'n3','重合闸成功 · t≈0.60 s',
-        rc?('合上 '+FAULT.reclosed.map(kname).join('、')+'，瞬时性故障消失'):'待执行', rc);
-    add(3,'n3','供电恢复正常 · t≈0.60 s',
-        rc?'无需隔离与转供，线路继续正常运行':'待执行', rc);
+    add('+0.60 s','② 重合闸成功',
+        rc?('合上 '+FAULT.reclosed.map(kname).join('、')+'，瞬时性故障消失'):'待执行', rc, 'r');
+    add('+0.60 s','③ 供电恢复正常',
+        rc?'无需隔离与转供，线路继续正常运行':'待执行', rc, 'r');
   } else {
-    add(2,'n2','故障隔离 · t≈0.35 s',
+    add('+0.35 s','② 故障隔离',
         FAULT.iso.length?('拉开 '+FAULT.iso.map(kname).join('、')+
-          (FAULT.rf?('；'+kname(FAULT.rf)+' 拒动'):'')):'待执行', !!FAULT.iso.length);
-    add(3,'n3','转供恢复 · t≈1.20 s',
-        FAULT.restored.length?('合上 '+FAULT.restored.map(kname).join('、')):
-          (FAULT.rf?'转供被闭锁（故障未完全隔离）':'待执行'), !!FAULT.restored.length);
+          (FAULT.rf?('；'+kname(FAULT.rf)+' 拒动'):'')):'待执行', !!FAULT.iso.length, 'i');
+    var rdet;
+    if(!FAULT.restored.length) rdet=FAULT.rf?'转供被闭锁（故障未完全隔离）':'待执行';
+    else {
+      var bz=(FAULT.bzt||[]).map(function(id){ return (DEV[id]?DEV[id].name:id)+'母联'; });
+      var ot=FAULT.restored.filter(function(k){ return (FAULT.bzt||[]).indexOf(kd(k).d)<0; }).map(kname);
+      rdet=(bz.length?('母联备自投动作：合上 '+bz.join('、')):'');
+      if(ot.length) rdet+=(rdet?'；':'')+'合上 '+ot.join('、');
+    }
+    add('+1.20 s','③ 转供恢复', rdet, !!FAULT.restored.length, 'r');
   }
+  var lastIdx=-1; rows.forEach(function(r,i){ if(r.on) lastIdx=i; });
   var h='<div class="ph" style="margin-bottom:2px">当前故障：<b>'+esc(FAULT.label)+'</b></div>';
-  h+='<div style="font-size:11.5px;color:#5b7083;line-height:1.5;margin-bottom:2px">'+esc(FAULT.msg||'')+'</div>';
-  rows.forEach(function(r){
-    h+='<div class="st'+(r.on?'':' off')+'"><span class="no '+(r.on?r.cls:'')+'">'+r.n+'</span>'+
+  h+='<div style="font-size:11.5px;color:#5b7083;line-height:1.5">'+esc(FAULT.msg||'')+'</div>';
+  h+='<div class="tls" id="tlAxis">';
+  rows.forEach(function(r,i){
+    var cls=r.on?((i===lastIdx&&lastIdx<rows.length-1)?'cur':'past'):'wait';
+    h+='<div class="sts '+cls+' k-'+r.c+'"><span class="tt">'+esc(r.t)+'</span><span class="dd"></span>'+
        '<span class="tx"><b>'+esc(r.title)+'</b><em>'+esc(r.det)+'</em></span></div>';
   });
+  h+='</div>';
   var dl=deadLoads();
   h+='<div class="ft" style="color:'+(dl?'#d6336c':COL.live)+'">当前失电配电房 '+dl+' 个'+
      (dl?'':'（全部恢复供电）')+'</div>';
@@ -1069,16 +1146,13 @@ function render(){
       ln(g,-60*k,0,-12*k,0,SC1,3.2);
       ln(g, 12*k,0, 60*k,0,SC2,3.2);
       busTerm(g,-60*k,0,SC1); busTerm(g,60*k,0,SC2);
-      /* 母联（分段开关）：标准“开关”画法 —— 两端静触头 + 刀闸：
-         合位时刀闸与导体重合（画成实心条），分位时刀闸斜置抬起（一眼看出是拉开的开关） */
-      var bt=T(id,'bt'), btOn=bt&&bt.sw, btCol=btOn?COL.live:COL.tie;
-      ln(g,-12*k,0,-7*k,0,btCol,2);
-      ln(g, 7*k,0, 12*k,0,btCol,2);
-      circ(g,-7*k,0,1.7*k,btCol);
-      circ(g, 7*k,0,1.7*k,btCol);
-      if(btOn) g.appendChild(el('rect',{x:-7*k,y:-1.1*k,width:14*k,height:2.2*k,rx:1.1,
-        fill:btCol,stroke:'none'}));
-      else ln(g,-7*k,0,3.4*k,-8.4*k,COL.open,1.9);
+      /* 母联（分段开关）统一用方框表示：空心=分位（断开），实心=合位（闭合） */
+      var bt=T(id,'bt'), btOn=bt&&bt.sw, btCol=btOn?COL.live:COL.tie, bq=7*k;
+      ln(g,-12*k,0,-bq,0,btCol,2);
+      ln(g, bq,0, 12*k,0,btCol,2);
+      g.appendChild(el('rect',{x:-bq,y:-bq,width:2*bq,height:2*bq,rx:1.6*k,
+        fill:btOn?btCol:'#fff',stroke:btOn?btCol:COL.open,'stroke-width':1.7,
+        'stroke-linejoin':'round'}));
       txt(g,0,23*k,'母联',{size:7.6,fill:COL.muted,halo:3,flip:d.flip});
       if(bt){ var bhit=el('rect',{x:-11*k,y:-9*k,width:22*k,height:18*k,fill:'transparent'});
         bhit.style.cursor='pointer';
@@ -1191,17 +1265,20 @@ function render(){
   if(tieW){ var gtw=wpath(tieW), tm=gtw&&longestMid(gtw.pts);
     if(tm) txt(gL,tm[0],tm[1]-16,'联络开关（常开）',{size:11.5,weight:700,fill:COL.tie}); }
 
-  if(FAULT) MK.forEach(function(m){
-    var k=m[0]+':'+m[1], ns=[], col=COL.dead;
-    if(FAULT.tripped.indexOf(k)>=0){ ns.push(1); col=COL.flt; }
-    if(FAULT.iso.indexOf(k)>=0){ ns.push(2); col=COL.tie; }
-    if(FAULT.reclosed&&FAULT.reclosed.indexOf(k)>=0){ ns.push(2); col=COL.live; }
-    if(FAULT.restored.indexOf(k)>=0){ ns.push(3); col=COL.live; }
-    if(!ns.length) return;
-    var uniq=[]; ns.forEach(function(v){ if(uniq.indexOf(v)<0) uniq.push(v); });
-    var p=xf(DEV[m[0]],m[2],m[3]);
-    stepMark(gL,p[0]+15,p[1]-15,uniq.join('·'),col);
-  });
+  if(FAULT){ var mk=[];
+    MK.forEach(function(m){
+      var k=m[0]+':'+m[1], ns=[], col=COL.dead;
+      if(FAULT.tripped.indexOf(k)>=0){ ns.push(1); col=COL.flt; }
+      if(FAULT.iso.indexOf(k)>=0){ ns.push(2); col=COL.tie; }
+      if(FAULT.reclosed&&FAULT.reclosed.indexOf(k)>=0){ ns.push(2); col=COL.live; }
+      if(FAULT.restored.indexOf(k)>=0){ ns.push(3); col=COL.live; }
+      if(!ns.length) return;
+      var uniq=[]; ns.forEach(function(v){ if(uniq.indexOf(v)<0) uniq.push(v); });
+      var p=xf(DEV[m[0]],m[2],m[3]);
+      mk.push({x:p[0],y:p[1],cy:DEV[m[0]].y,n:uniq.join('·'),col:col});
+    });
+    placeStepMarks(gL,mk);
+  }
 
   SVG.appendChild(gG); SVG.appendChild(gW); SVG.appendChild(gF); SVG.appendChild(gD); SVG.appendChild(gL);
 }
@@ -1675,6 +1752,19 @@ function zoneLive(){
     if(EN[k]) return true; }
   return false;
 }
+/* 需要"母联备自投"的开关站：一段母线失压、另一段母线有压
+   （按站独立判断，本站母联未被闭锁、也未被②隔离拉开） */
+function bztCandidates(){
+  var out=[];
+  ORDER.forEach(function(id){ var d=DEV[id];
+    if(d.type!=='sta') return;
+    var bt=findTermObj(id,'bt'); if(!bt||bt.sw) return;
+    if(FAULT.lockTie===id) return;
+    if(FAULT.iso&&FAULT.iso.indexOf(id+':bt')>=0) return;
+    var v1=!!EN[id+':b1'], v2=!!EN[id+':b2'];
+    if(v1!==v2) out.push(id); });
+  return out;
+}
 
 /* ① 故障发生：保护只动作于"故障侧"电源，按电气距离取最近的一台 */
 function setFault(){
@@ -1688,7 +1778,7 @@ function setFault(){
     : (d0.name+(d0.type==='sta'?(inc?' 两路进线电源同时失电':' Ⅰ段母线故障'):' 故障'));
   FAULT={kind:SEL.kind,id:SEL.id,label:label,tripped:[],iso:[],restored:[],zone:[],msg:'',
          zoneSeed:'',rf:SCENE_RF||null,tr:SCENE_TR,inc:inc,lockTie:null,noseal:!!inc,
-         pre:JSON.stringify(snap())};
+         bztArm:[],bzt:[],pre:JSON.stringify(snap())};
   var act=[], ldEnd=null;
   if(w0){
     /* 光纤电流差动保护：瞬时切开故障电缆两端开关，故障区间与系统解列；
@@ -1726,11 +1816,14 @@ function setFault(){
     if(t&&t.sw){ t.sw=false; FAULT.tripped.push(kk); } });
   var names=FAULT.tripped.map(kname);
   push(); simulate();
+  FAULT.bztArm=bztCandidates();                     /* ① 同时识别失压段 → 启动母联备自投 */
   var nd=deadLoads();
   FAULT.msg='① 保护动作：'+(esc?esc:('跳开 '+names.join('、')))+
     (ldEnd?('，切除 '+ldEnd.name+' 的故障分支；该配电房为双回路供电，另一回路继续运行，用户不停电')
       :(nd?('，'+nd+' 个配电房失电'):
-        '；故障区间已切除，非故障段继续供电（合环运行 + 差动保护两端切除，双花瓣的核心优势）'));
+        '；故障区间已切除，非故障段继续供电（合环运行 + 差动保护两端切除，双花瓣的核心优势）'))+
+    (FAULT.lockTie?('；本站 Ⅰ段母线故障，母联备自投被闭锁（不得向故障母线送电）')
+      :(FAULT.bztArm.length?('；'+FAULT.bztArm.length+' 座开关站一段母线失压，母联备自投已启动'):''));
   paint();
 }
 /* 瞬时性故障：重合闸成功 */
@@ -1788,7 +1881,17 @@ function doRestore(){
   simulate();
   FAULT.zone=zoneKeys();
   var before=deadLoads();
-  FAULT.restored=[];
+  FAULT.restored=[]; FAULT.bzt=[];
+  /* (1) 母联备自投（按站独立动作）：某段母线失压、另一段有压 → 合该站母联，
+     由另一段母线转带本站全部负荷；逐座校验"不并列、不向故障区间送电" */
+  bztCandidates().forEach(function(id){
+    var bt=findTermObj(id,'bt'); if(!bt||bt.sw) return;
+    bt.sw=true; simulate();
+    if(SIM.paired||(!FAULT.noseal&&zoneLive())) bt.sw=false;   /* 会造成两电源并列/向故障区送电 → 闭锁 */
+    else { FAULT.restored.push(id+':bt'); FAULT.bzt.push(id); }
+  });
+  simulate(); FAULT.zone=zoneKeys();
+  /* (2) 其余备用通道（就近合上进线/环网开关）补齐剩余失电负荷 */
   for(var round=0;round<30;round++){
     simulate();
     var base=liveLoads(), best=null, bestGain=0, bestCost=9;
@@ -1814,6 +1917,12 @@ function doRestore(){
   }
   simulate();
   var names=FAULT.restored.map(kname);
+  var bztNames=FAULT.bzt.map(function(id){ return (DEV[id]?DEV[id].name:id)+'母联'; });
+  var other=FAULT.restored.filter(function(k){ return FAULT.bzt.indexOf(kd(k).d)<0; }).map(kname);
+  var acts='';
+  if(bztNames.length) acts='母联备自投动作：合上 '+bztNames.join('、');
+  if(other.length)    acts+=(acts?'；':'')+'合上 '+other.join('、');
+  if(!acts) acts='无需合闸';
   var now=deadLoads(), back=before-now;
   if(!names.length&&now){
     var ldFlt=false;
@@ -1827,7 +1936,7 @@ function doRestore(){
   } else FAULT.why='';
   var hold=[];
   ORDER.forEach(function(id){ if(DEV[id].type==='ld'&&!ldLive(id)) hold.push(DEV[id].name); });
-  FAULT.msg='③ 转供恢复：'+(names.length?('合上 '+names.join('、')):'无需合闸')+'，恢复 '+back+' 个配电房'+
+  FAULT.msg='③ 转供恢复：'+acts+'，恢复 '+back+' 个配电房'+
     (now?('；仍有 '+now+' 个未复电（'+hold.slice(0,3).join('、')+(hold.length>3?' 等':'')+
       (FAULT.why?('）——'+FAULT.why):'，位于故障区间或母线，须待修复）')):'；非故障段已全部恢复供电');
   push(); paint();
@@ -1930,23 +2039,32 @@ function loadScene(s){
   setTlLabels(s.tr?'tr':'perm');
   simulate(); render(); panels(); return true;
 }
-var TLL={perm:['正常运行','① 故障发生 · 保护动作','② 故障隔离','③ 转供恢复供电'],
-         tr:['正常运行','① 故障发生 · 保护跳闸','② 重合闸成功','③ 供电恢复正常']};
+/* 竖向时间轴：t=0.00 s 为故障发生时刻，之前是正常运行，之后是保护/隔离/转供各步 */
+var TLL={perm:[{t:'＜0.00 s',n:'正常运行'},
+               {t:'0.00 s',  n:'① 故障发生 · 保护动作'},
+               {t:'+0.35 s', n:'② 故障隔离'},
+               {t:'+1.20 s', n:'③ 转供恢复供电'}],
+         tr:[{t:'＜0.00 s',n:'正常运行'},
+             {t:'0.00 s',  n:'① 故障发生 · 保护跳闸'},
+             {t:'+0.60 s', n:'② 重合闸成功'},
+             {t:'+0.60 s', n:'③ 供电恢复正常'}]};
 function setTlLabels(kind){
-  var L=TLL[kind]||TLL.perm, c=document.querySelectorAll('#tlRow .chip');
-  for(var i=0;i<c.length;i++) c[i].textContent=L[i]||'';
+  var L=TLL[kind]||TLL.perm, its=document.querySelectorAll('#tlRow .tli');
+  for(var i=0;i<its.length;i++){ var o=L[i]; if(!o) continue;
+    its[i].querySelector('.tlt').textContent=o.t;
+    its[i].querySelector('.tln').textContent=o.n; }
 }
 function setTl(n){
-  var c=document.querySelectorAll('#tlRow .chip');
-  for(var i=0;i<c.length;i++){ var k=+c[i].getAttribute('data-s');
-    c[i].className='chip'+(k===n?' on':(k<n?' done':'')); }
+  var its=document.querySelectorAll('#tlRow .tli');
+  for(var i=0;i<its.length;i++){ var k=+its[i].getAttribute('data-s');
+    its[i].className='tli'+(k===n?' on':(k<n?' done':'')); }
 }
 function tlMsg(s){ document.getElementById('tlMsg').textContent=s; }
-function tlText(n,tr){ if(tr) return n===1?'t≈0.10 s：保护跳闸，切除故障':
-  n===2?'t≈0.60 s：自动重合闸成功':n===3?'t≈0.60 s：供电恢复，无需隔离与转供':'';
-  return n===1?'t≈0.10 s：保护动作，切除故障侧电源':
-  n===2?'t≈0.35 s：环网开关动作，隔离故障区间':
-  n===3?'t≈1.20 s：联络/备用开关合闸，非故障段转供复电':''; }
+function tlText(n,tr){ if(tr) return n===1?'0.00 s：保护跳闸，切除故障':
+  n===2?'+0.60 s：自动重合闸成功':n===3?'+0.60 s：供电恢复，无需隔离与转供':'';
+  return n===1?'0.00 s：保护动作，切除故障侧电源':
+  n===2?'+0.35 s：环网开关动作，隔离故障区间':
+  n===3?'+1.20 s：联络/备用开关合闸，非故障段转供复电':''; }
 function demoStop(){ if(DEMO.timer) clearTimeout(DEMO.timer); DEMO.timer=null; DEMO.playing=false; }
 function advance(){
   var s=curScene(), tr=!!(s&&s.tr);
@@ -2142,7 +2260,7 @@ window.__api={snap:snap,load:load,DEV:DEV,WIRES:WIRES,simulate:simulate,T:T,impa
   liveLoads:liveLoads,deadLoads:deadLoads,
   dev:function(){return DEV;},wires:function(){return WIRES;},
   TOPO:function(){return TOPO;},loadTopo:loadTopo,zoomFit:zoomFit,Z:function(){return Z;},
-  sel:function(){return SEL;},copy:actCopy,paste:actPaste,zoomFit2:zoomFit,
+  sel:function(){return SEL;},selSet:function(k,id){SEL={kind:k,id:id};},copy:actCopy,paste:actPaste,zoomFit2:zoomFit,
   tp:tp,dirW:dirW,term:findTermObj,mode:function(){return {OUT:OUT,LOOP:LOOP};},
   applyModes:applyModes,actLoop:actLoop};
 })();
