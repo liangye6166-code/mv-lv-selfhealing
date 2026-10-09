@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>双花瓣配电网 · 可编辑 / 可仿真原型</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%231d4ed8'/%3E%3Ccircle cx='11' cy='16' r='4.6' fill='none' stroke='%23fff' stroke-width='2.2'/%3E%3Ccircle cx='21' cy='16' r='4.6' fill='none' stroke='%230d9488' stroke-width='2.2'/%3E%3C/svg%3E">
 <style>
@@ -302,11 +302,89 @@
   .foot .msg{color:var(--muted);font-size:11.5px;min-width:0;overflow:hidden;text-overflow:ellipsis;
     white-space:nowrap;flex:1}
   .num{font-variant-numeric:tabular-nums;font-family:ui-monospace,Menlo,Consolas,monospace}
+
+  /* ══════════ 响应式：桌面 → 平板 → 手机 / 折叠屏 ══════════ */
+  .mobbtn,.drawerx,.mask,.rotmask{display:none}
+
+  /* 小笔记本 / 平板横屏：收窄两侧栏 */
+  @media (max-width:1360px){
+    .mid{grid-template-columns:262px minmax(0,1fr) 308px}
+  }
+  @media (max-width:1180px){
+    .app{padding:9px 10px;gap:7px}
+    .mid{grid-template-columns:230px minmax(0,1fr) 282px;gap:7px}
+    .box{padding:9px 11px}
+    h1{font-size:15px}
+    .scnlist{max-height:186px}
+    .cvlegend{max-width:min(360px,46%)}
+  }
+  @media (max-width:1000px){
+    .tbright .ctl{display:none}          /* 符号比例滑杆收进「视图」菜单 */
+    .foot .msg{display:none}
+    .brand em{display:none}
+  }
+
+  /* 手机 / 折叠屏 / 触屏平板：侧栏改抽屉，画布通栏 */
+  @media (max-width:900px), (hover:none) and (pointer:coarse) and (max-width:1100px){
+    .app{padding:calc(6px + env(safe-area-inset-top)) calc(6px + env(safe-area-inset-right))
+         calc(6px + env(safe-area-inset-bottom)) calc(6px + env(safe-area-inset-left));gap:6px}
+    .menubar{padding:5px 8px;gap:6px}
+    .brand{font-size:12.5px}
+    .brand em{display:none}
+    nav.mn{gap:0}
+    .mnu{padding:4px 8px;font-size:12px}
+    .mobbtn{display:inline-flex;align-items:center;gap:4px;padding:4px 9px;font-size:12px;font-weight:600}
+    .tbmid{gap:5px}
+    .modecap{padding:3px 9px;font-size:11px}
+    .modecap b{font-size:11.5px}
+    #bLoop,#bOut{padding:3px 8px;font-size:11px}
+    .tbright{gap:7px}
+    #hint{display:none}
+    /* 侧栏 → 抽屉 */
+    .mid{display:block;position:relative}
+    .mid>.stage{height:100%}
+    .mid>.side{display:flex;position:fixed;top:0;bottom:0;left:0;width:min(86vw,326px);z-index:84;
+      padding:calc(10px + env(safe-area-inset-top)) 10px 12px;background:var(--bg);gap:8px;
+      overflow:auto;border-radius:0 14px 14px 0;box-shadow:0 12px 40px rgba(18,38,63,.28);
+      transform:translateX(-105%);transition:transform .22s ease}
+    .mid>.side.sider{left:auto;right:0;border-radius:14px 0 0 14px;transform:translateX(105%)}
+    .mid>.side.open{transform:none}
+    .mid.focus>.side{display:flex}
+    .drawerx{display:block;width:100%;text-align:left;border:0;background:#e7eefb;color:#33465c;
+      border-radius:8px;padding:7px 11px;font-size:12px;font-weight:700}
+    .mask{display:none;position:fixed;inset:0;z-index:83;padding:0;border:0;border-radius:0;
+      background:rgba(18,38,63,.36)}
+    .mask.on{display:block}
+    /* 底栏：单行横向滚动，不占竖向空间 */
+    .foot{padding:6px 9px;gap:9px;flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch}
+    .foot .msg{display:none}
+    .foot .chkbox{flex-wrap:nowrap}
+    .tags,.chks{flex-wrap:nowrap}
+    .cvlegend{max-width:min(330px,52%);font-size:9.5px;padding:5px 8px;gap:2px 8px}
+    .zoombar{right:8px;bottom:8px}
+    .scnlist{max-height:178px}
+    .dlgbox{width:min(94vw,560px)}
+    .act .sts{grid-template-columns:54px 12px 1fr}
+  }
+  @media (max-width:560px){ .brand{display:none} }   /* 极窄竖屏：品牌让位，命令仍可点 */
+
+  /* 手机 / 折叠屏竖屏：提示横屏（默认横屏使用） */
+  .rotmask{position:fixed;inset:0;z-index:120;padding:22px;
+    background:linear-gradient(180deg,#0f1c33,#12263f);align-items:center;justify-content:center}
+  .rotcard{max-width:330px;text-align:center;color:#dbe7ff}
+  .rotcard .ic{font-size:38px;line-height:1;color:#6f9bf0}
+  .rotcard b{display:block;font-size:17px;color:#fff;margin:8px 0 5px}
+  .rotcard p{margin:0 0 15px;font-size:12.5px;color:#a9bcd8;line-height:1.65}
+  .rotcard button{margin:3px 4px}
+  .rotcard button.ghost{background:none;border-color:#3c5a86;color:#b9cbe6}
+  .rotcard button.ghost:hover{background:rgba(255,255,255,.06);border-color:#5a7cae}
+  @media (max-width:900px) and (orientation:portrait){ .rotmask.on{display:flex} }
 </style>
 </head>
 <body>
 <div class="app">
   <header class="pane menubar">
+    <button class="mobbtn" id="bPanelL" title="模板 / 演练 / 动作过程">☰ 面板</button>
     <div class="brand">双花瓣配电网 <em>仿真工作台</em></div>
     <nav class="mn" id="mn">
       <button class="mnu" data-m="file">文件</button>
@@ -321,6 +399,7 @@
       <button id="bOut" class="mini" title="开关站母联：常开 = 两段互为备用；常合 = 两段并列运行">母联常开</button>
     </span>
     <span class="tbright">
+      <button class="mobbtn" id="bPanelR" title="图元属性 / 编辑 / 通断分析">⚙ 属性</button>
       <span class="hint" id="hint"></span>
       <span class="ctl" title="符号比例：只缩放图元符号，不改变画布缩放">符号比例
         <input type="range" id="rSz" min="55" max="130" step="5" value="80"><b id="lSz" class="num">80%</b></span>
@@ -328,7 +407,8 @@
   </header>
 
   <div class="mid" id="mid">
-    <aside class="side">
+    <aside class="side" id="sideL">
+      <button class="drawerx" id="xL">✕ 收起面板</button>
       <div class="pane box">
         <b>拓扑模板</b>
         <div class="topos" id="topoList"></div>
@@ -383,7 +463,8 @@
       </div>
     </section>
 
-    <aside class="side">
+    <aside class="side sider" id="sideR">
+      <button class="drawerx" id="xR">✕ 收起面板</button>
       <div class="pane box"><b>图元属性 · 编辑 · 通断分析</b><div id="pSel"></div></div>
     </aside>
   </div>
@@ -396,6 +477,16 @@
 </div>
 
 <input type="file" id="fImport" accept=".json" style="display:none">
+<button class="mask" id="mask" title="收起面板"></button>
+<div class="rotmask" id="rotMask">
+  <div class="rotcard">
+    <div class="ic">▭</div>
+    <b>请横屏使用</b>
+    <p>本工作台是宽幅电气接线画布，横屏可完整看到花瓣拓扑、图例与底栏状态。</p>
+    <button class="primary" id="bGoLand">进入横屏全屏</button>
+    <button class="ghost" id="bSkipRot">竖屏继续</button>
+  </div>
+</div>
 <div class="menu" id="menu"></div>
 <div class="dlg" id="dlg"><div class="dlgbox">
   <div class="dlghd"><b id="dlgT"></b><button id="dlgX" title="关闭">✕</button></div>
@@ -1421,12 +1512,13 @@ function hitTerm(g,node,id,tid){
 /* ================= 交互 ================= */
 /* 画布按 preserveAspectRatio 等比居中，这里换算出用户坐标（含 viewBox 原点偏移） */
 function vbRect(){ return SVG.viewBox.baseVal; }
-function toWorld(ev){
+function toWorldXY(cx,cy){
   var r=SVG.getBoundingClientRect(), vb=vbRect();
   var k=Math.min(r.width/vb.width,r.height/vb.height)||1;
   var ox=r.left+(r.width-vb.width*k)/2, oy=r.top+(r.height-vb.height*k)/2;
-  return [vb.x+(ev.clientX-ox)/k, vb.y+(ev.clientY-oy)/k];
+  return [vb.x+(cx-ox)/k, vb.y+(cy-oy)/k];
 }
+function toWorld(ev){ return toWorldXY(ev.clientX,ev.clientY); }
 function worldPerPx(){ var r=SVG.getBoundingClientRect(), vb=vbRect();
   return 1/(Math.min(r.width/vb.width,r.height/vb.height)||1); }
 
@@ -1500,6 +1592,23 @@ SVG.addEventListener('mousedown',function(ev){ if(ev.target===SVG){
   SVG.style.cursor='grabbing'; ev.preventDefault(); } });
 SVG.addEventListener('wheel',function(ev){ ev.preventDefault();
   var w=toWorld(ev); zoomAt(ev.deltaY<0?1.12:1/1.12,w[0],w[1]); },{passive:false});
+/* 触摸屏：双指捏合缩放（以两指中点锚定并跟随移动），单指拖动由鼠标事件承担 */
+var PINCH=null;
+function tpDist(t){ return Math.hypot(t[0].clientX-t[1].clientX,t[0].clientY-t[1].clientY); }
+function tpMid(t){ return [(t[0].clientX+t[1].clientX)/2,(t[0].clientY+t[1].clientY)/2]; }
+SVG.addEventListener('touchstart',function(ev){
+  if(ev.touches.length===2){ drag=null; PREV=null; hideCtx();
+    var m=tpMid(ev.touches);
+    PINCH={d:tpDist(ev.touches)||1,mid:m,w:toWorldXY(m[0],m[1]),z:Z}; }
+},{passive:true});
+SVG.addEventListener('touchmove',function(ev){
+  if(ev.touches.length!==2||!PINCH) return; ev.preventDefault();
+  var d=tpDist(ev.touches), m=tpMid(ev.touches);
+  zoomAt(PINCH.z*(d/PINCH.d)/Z,PINCH.w[0],PINCH.w[1]);
+  var k=worldPerPx();
+  CX-=(m[0]-PINCH.mid[0])*k; CY-=(m[1]-PINCH.mid[1])*k; applyVB();
+},{passive:false});
+SVG.addEventListener('touchend',function(ev){ if(ev.touches.length<2) PINCH=null; },{passive:true});
 
 function toggle(id,tid){ var t=findTermObj(id,tid); if(!t) return; push(); t.sw=!t.sw; paint(); }
 function delWire(wid){ push();
@@ -1694,7 +1803,8 @@ var MENUDEF={
     ['dup','原地复制','Ctrl+D'],['del','删除选中','Delete'],['-'],['allClose','全部合闸'],['allOpen','全部分闸'],
     ['reset','复位拓扑（回到当前模板初始状态）']]},
   view:{title:'视图',items:[['zoomIn','放大','+'],['zoomOut','缩小','−'],['zoomFit','适应窗口','F'],
-    ['zoom100','实际大小 100%'],['-'],['focus','专注画布'],['flow','显示潮流箭头'],['glow','显示主干辉光']]},
+    ['zoom100','实际大小 100%'],['-'],['szUp','符号比例 ＋'],['szDn','符号比例 −'],['-'],
+    ['focus','专注画布'],['flow','显示潮流箭头'],['glow','显示主干辉光']]},
   drill:{title:'演练',items:[['demo','▶ 自动演示'],['step','单步执行'],['clear','复位运行方式'],['-'],
     ['impFault','导入故障点…']]},
   help:{title:'帮助',items:[['keys','快捷键一览'],['doc','接线约定 / 图元画法'],['about','关于本工具']]}
@@ -1703,7 +1813,8 @@ var ACTFN={loop:actLoop,new:actReset,reset:actReset,export:actExport,import:actI
   exportPng:actExportPng,undo:actUndo,copy:actCopy,paste:actPaste,dup:actDup,del:actDelSel,
   allClose:actAllClose,allOpen:actAllOpen,zoomIn:actZoomIn,zoomOut:actZoomOut,zoomFit:actZoomFit,
   zoom100:actZoom100,focus:actFocus,flow:actFlow,glow:actGlow,outward:actOutward,demo:actDemo,
-  step:actStep,clear:actClear,impFault:actImpFault,keys:showKeys,doc:showDoc,about:showAbout};
+  step:actStep,clear:actClear,impFault:actImpFault,keys:showKeys,doc:showDoc,about:showAbout,
+  szUp:function(){ setSz(SZ*100+10); },szDn:function(){ setSz(SZ*100-10); }};
 function menuState(k){ if(k==='flow') return SHOW_FLOW; if(k==='glow') return SHOW_GLOW;
   if(k==='outward') return OUT; if(k==='loop') return LOOP;
   if(k==='focus') return document.getElementById('mid').classList.contains('focus'); return false; }
@@ -1795,7 +1906,10 @@ document.getElementById('zOut').onclick=actZoomOut;
 document.getElementById('zFit').onclick=actZoomFit;
 document.getElementById('zLv').onclick=actZoom100;
 var rSz=document.getElementById('rSz'), lSz=document.getElementById('lSz');
-rSz.oninput=function(){ SZ=+rSz.value/100; lSz.textContent=rSz.value+'%'; placeLoads(); refresh(); };
+function setSz(pct){ pct=Math.max(55,Math.min(130,Math.round(pct/5)*5));
+  SZ=pct/100; if(rSz) rSz.value=pct; if(lSz) lSz.textContent=pct+'%';
+  placeLoads(); refresh(); syncMenu(); }
+rSz.oninput=function(){ setSz(+rSz.value); };
 document.getElementById('fImport').onchange=function(e){
   var f=e.target.files[0]; if(!f) return; var r=new FileReader();
   r.onload=function(){ try{ load(JSON.parse(r.result)); fmsg('已导入拓扑文件。'); }
@@ -2785,6 +2899,41 @@ function autoFitSide(){
   else if(side.scrollHeight+110<=side.clientHeight) box.classList.remove('closed');
 }
 window.addEventListener('resize',autoFitSide);
+
+/* ══════════ 响应式：侧栏抽屉 / 横屏提示 ══════════ */
+var MQL=window.matchMedia, mqNarrow=MQL('(max-width:900px)'), mqPortrait=MQL('(orientation:portrait)'),
+    mqCoarse=MQL('(hover:none) and (pointer:coarse)'), ROT_SKIP=false;
+function isHandheld(){ return mqNarrow.matches||(mqCoarse.matches&&window.innerWidth<=1100); }
+function isTouch(){ return mqCoarse.matches||(navigator.maxTouchPoints||0)>0; }
+function openDrawer(side){
+  var l=document.getElementById('sideL'), r=document.getElementById('sideR'), m=document.getElementById('mask');
+  if(l) l.classList.toggle('open',side==='l');
+  if(r) r.classList.toggle('open',side==='r');
+  if(m) m.classList.toggle('on',!!side); }
+function closeDrawers(){ openDrawer(null); }
+document.getElementById('bPanelL').onclick=function(){ var l=document.getElementById('sideL');
+  openDrawer(l.classList.contains('open')?null:'l'); };
+document.getElementById('bPanelR').onclick=function(){ var r=document.getElementById('sideR');
+  openDrawer(r.classList.contains('open')?null:'r'); };
+document.getElementById('mask').onclick=closeDrawers;
+document.getElementById('xL').onclick=closeDrawers;
+document.getElementById('xR').onclick=closeDrawers;
+function syncRotMask(){ var m=document.getElementById('rotMask'); if(!m) return;
+  m.classList.toggle('on', !!(isTouch()&&mqPortrait.matches&&window.innerWidth<=900&&!ROT_SKIP)); }
+document.getElementById('bGoLand').onclick=function(){
+  try{ var el=document.documentElement; if(el.requestFullscreen) el.requestFullscreen(); }catch(e){}
+  try{ if(screen.orientation&&screen.orientation.lock) screen.orientation.lock('landscape').catch(function(){}); }catch(e){}
+  ROT_SKIP=true; syncRotMask(); setTimeout(zoomFit,320); };
+document.getElementById('bSkipRot').onclick=function(){ ROT_SKIP=true; syncRotMask(); setTimeout(zoomFit,60); };
+var rzT=null;
+window.addEventListener('resize',function(){
+  if(!isHandheld()) closeDrawers();
+  clearTimeout(rzT); rzT=setTimeout(function(){ syncRotMask(); autoFitSide(); },160); });
+window.addEventListener('orientationchange',function(){
+  closeDrawers();
+  setTimeout(function(){ syncRotMask();
+    if(FAULT&&FAULT.phase) zoomToFault(); else zoomFit(); },280); });
+syncRotMask();
 
 build(); paint();
 document.title='双花瓣配电网 · '+TOPO.name+' · 仿真工作台';
