@@ -71,7 +71,8 @@ bash tools/public-preview.sh
 
 | 模块 | 能力 |
 | --- | --- |
-| 接线拓扑 | 内置 **双花瓣 / 单花瓣 / 双环网 / 单环网 / 单辐射** 五种模板，一键切换，可自由编辑 |
+| 元件库搭网 | 左侧「元件库」可**拖拽 / 点击**加入 变电站 · 开关站 · 配电房，从端子拖线即成网；「空白网架」从零搭；模板 = 预设 JSON |
+| 接线拓扑 | 内置 **双花瓣 / 单花瓣 / 双环网 / 单环网 / 单辐射** 五种预设 + **自定义**空白网架，可自由编辑 |
 | 绘图编辑 | 拖动图元、拖动电缆改走线、端子间拖拽接线、复制/粘贴/原地复制、旋转/翻转 |
 | 视图 | 菜单 + 缩放条 + 滚轮缩放、平移、适应窗口、专注画布、显示潮流箭头、主干辉光、母联常开 / 常合 |
 | 仿真 | 并查集连通性 + BFS 潮流，实时母线/端子带电判定与潮流方向，10 kV 主干带辉光 |
@@ -79,7 +80,37 @@ bash tools/public-preview.sh
 | 教科书网架 | 双花瓣 = **2 座变电站 + 两排 9 座开关站**；每片花瓣由一座变电站同一段母线的 2 回出线经纵向联络成环，两片花瓣在每座开关站经母联相切，合环运行 |
 | 校验告警 | 双电源并列、环网开环点、失电范围、备用间隔统计、单辐射无联络提示 |
 | 存档 | 导出/导入 JSON，浏览器本地存档（localStorage），导出 PNG |
+| 状态码 | 每一步输出稳定状态码 `__api.status()`（`ENERGIZED`/`DEENERGIZED`/`FAULT`/`SWITCH_OPEN`/`SWITCH_CLOSED`/`TIE_CLOSED`/`STEP_*`），可驱动沙盘灯带（见 [`docs/状态码与灯带映射.md`](docs/状态码与灯带映射.md)） |
 | 版本管理 | Git 仓库 + 语义化版本标签（见 `CHANGELOG.md`） |
+
+## 搭网（元件库）
+
+1. 左栏「拓扑模板」点 **自定义**（或点「空白网架 / 清空画布…」）→ 得到空白画布。
+2. 从「元件库」把 **变电站 / 开关站 / 配电房** **拖到画布**（或直接点击，落在视图中央）。
+   - 开关站会自动带出本站 4 个用户出线配电房；单独拖入的配电房需要自己接线。
+3. 从图元的**端子**按住拖到另一个**端子**松手即成一根电缆；拖动电缆本体可调整走线位置。
+4. 右键图元：镜像 / 旋转 / 本站开关全合全分 / 设为故障点 / 重命名 / 删除；
+   右键电缆：复位走线 / **设为常开联络（分位）** / 设为故障点 / 删除。
+5. 「导出 JSON」保存整份网架（图元 + 电缆 + 开关状态 + 模板标识），「导入 JSON」原样载回——
+   以后接真实线路只需换这份 JSON。
+
+> 未接线的配电房按**失电**计（未供电），校验条会给出失电数，便于边搭边校。
+> 拖动电缆/图元、旋转、复制粘贴、撤销（Ctrl+Z）等编辑能力对自建网架同样可用。
+
+## 状态码与沙盘灯带
+
+每一步动作都输出稳定状态码，便于映射灯带（通电亮、失电灭、故障闪、动作瞬间闪一下）：
+
+```js
+var st = window.__api.status();
+// st.step  → IDLE | PROTECT | ISOLATE | RESTORE | DONE
+// st.dev   → { A1:'ENERGIZED', A2:'DEENERGIZED', SUBA:'FAULT', … }
+// st.sw    → { 'A1:bt':'SWITCH_OPEN', 'A1:u1':'SWITCH_CLOSED', … }   （TIE_CLOSED=联络合上）
+// st.loads → { total:36, live:36, dead:0, lvAffected:0 }
+```
+
+底栏芯片也会同步显示当前**状态码**。完整枚举、颜色对照与桥接示例见
+[`docs/状态码与灯带映射.md`](docs/状态码与灯带映射.md)。
 
 ## 图元约定（与典型设计图一致）
 
@@ -168,6 +199,7 @@ bash tools/public-preview.sh
 ├── index.html              # 全部实现（HTML + SVG + CSS + JS，单文件、零依赖）
 ├── docs/
 │   ├── 接线约定.md          # 电气约定与图元画法
+│   ├── 状态码与灯带映射.md   # 状态枚举 + 沙盘灯带对照
 │   └── 接线示意图-old.html  # 早期静态示意图（历史留存）
 ├── CHANGELOG.md            # 版本变更记录
 └── README.md
@@ -175,24 +207,40 @@ bash tools/public-preview.sh
 
 ## 发布到 GitHub
 
-本仓库已做好完整的 Git 版本管理（含提交历史与版本标签），但本机无 GitHub 凭据，**首次推送**需你在 GitHub 上建好空仓库后执行：
+本仓库已做好完整的 Git 版本管理（含提交历史、备份分支与版本标签），但**本机没有 GitHub 凭据**，
+所以远端推送需要你提供一次访问方式：
 
 ```bash
-cd 本项目目录
-git remote add origin git@github.com:<你的用户名>/<仓库名>.git
-git push -u origin main --tags
+# 1) 在 GitHub 建一个空仓库（不要勾选 README / .gitignore）
+# 2) 配好访问方式后一键推送（远端、分支、标签一起推）
+tools/push-to-github.sh git@github.com:<你的用户名>/<仓库名>.git      # SSH
+tools/push-to-github.sh https://<token>@github.com/<你的用户名>/<仓库名>.git   # HTTPS + PAT
 ```
 
-若使用 HTTPS：
+脚本会推送 `main`、全部备份分支（`backup/*`）与全部标签（含 `backup/*`、`v*`）。
 
-```bash
-git remote add origin https://github.com/<你的用户名>/<仓库名>.git
-git push -u origin main --tags
-```
+> SSH 方式：`cat ~/.ssh/id_ed25519.pub`，把公钥加到 GitHub → Settings → SSH and GPG keys。
+> HTTPS 方式：用 Personal Access Token（勾 `repo`）拼进 URL，或配 `git config credential.helper store`。
 
-> 本机 SSH 公钥请执行 `cat ~/.ssh/id_ed25519.pub` 获取，加到 GitHub → Settings → SSH and GPG keys 后即可免密推送。
+**当前版本管理状态**（本机已完成的备份，推送后远程立即可见）：
+
+| 引用 | 说明 |
+| --- | --- |
+| `backup/20261009-before-codex`（tag） | 可拖拽搭网改造**前**的可运行版本 |
+| `backup/before-selfheal-upgrade`（branch） | 同上，分支形式留档 |
+| `main` | 主干 |
+| `v*` | 各里程碑语义化版本标签 |
+
+### 本地如何打开
+
+- 直接双击 `index.html` 用浏览器打开（零依赖、零构建，`file://` 下功能完整）。
+- 或起一个静态服务：`python3 -m http.server 8080` → <http://localhost:8080/>。
 
 ## 说明
 
+- **产品定位**：中压自愈**过程演示底座**（故障 → 隔离 → 转供；低压二期）——
+  逻辑清晰、状态可映射沙盘灯带、可拖拽搭网架。**不是**主站全量 SCADA / 保护整定软件，
+  **不是**一次接线图 CAD，**本期不做** DTU / FTU / TTU / PT / CT / 避雷器 / 站用变 / 电容器 / 遥测曲线。
 - 本项目为**演示 / 教学用原型**，动作逻辑按典型配电自动化自愈流程编排，未接入真实定值与保护配合校验，**不可直接用于现场操作**。
 - 转供能力目前只做拓扑校验，未做载流量与保护定值校核。
+- **低压二期**：台区下钻与低压转供；数据模型已预留 `voltageLevel: 'LV'` 与 `lvFeederId`，本期不画 0.4 kV。
