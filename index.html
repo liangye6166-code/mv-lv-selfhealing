@@ -1128,6 +1128,10 @@ function render(){
         g.appendChild(hit);
         markSwitch(g,bx,my,id,t.id);
         if(FAULT) MK.push([id,t.id,bx,my]);
+        /* 环网间隔标注“进 / 出线”，用户间隔标注“户” */
+        var tag=(t.k==='in')?'进':(t.k==='sp'?'出':(t.k==='ld'?'户':''));
+        if(tag) txt(g,bx+(bx<0?-9*k:9*k),my+3*k,tag,
+          {size:7.4,weight:700,fill:live?col:COL.muted,halo:2.4});
         var tc=circ(g,X,Y,3.4*k,col); hitTerm(g,tc,id,t.id);
       });
     } else if(d.type==='sub'){
