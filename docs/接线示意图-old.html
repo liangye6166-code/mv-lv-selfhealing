@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>双花瓣配电网 · 拓扑总览</title>
+<style>
+  :root{
+    --ink:#12263f; --muted:#5b7083; --dim:#8fa3b8;
+    --a:#2563eb; --b:#7048e8; --tie:#e8590c; --sub:#334155;
+    --paper:#fff; --bg:#eef2f8; --hair:#e6ebf2;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{
+    background:var(--bg); color:var(--ink);
+    font:14px/1.5 -apple-system,"PingFang SC","Hiragino Sans GB","Noto Sans CJK SC","Microsoft YaHei",system-ui,sans-serif;
+    padding:26px 16px 44px; display:flex; justify-content:center;
+  }
+  .page{width:100%;max-width:1660px}
+  .card{
+    background:var(--paper); border-radius:16px; padding:22px 26px 16px;
+    box-shadow:0 12px 34px rgba(18,38,63,.10),0 2px 6px rgba(18,38,63,.06);
+  }
+  h1{margin:0;font-size:20px;font-weight:700;letter-spacing:.4px}
+  h1 em{font-style:normal;color:var(--a)}
+  .sub{margin:7px 0 0;font-size:13px;color:var(--muted)}
+  .stage{margin-top:6px}
+  svg{display:block;width:100%;height:auto}
+  .flow{animation:flow 1.2s linear infinite}
+  @keyframes flow{to{stroke-dashoffset:-16}}
+  @media (prefers-reduced-motion: reduce){ .flow{animation:none} }
+  .legend{
+    display:flex;flex-wrap:wrap;gap:10px 22px;margin-top:10px;padding-top:13px;
+    border-top:1px solid var(--hair);font-size:12.5px;color:var(--muted);
+  }
+  .legend span{display:inline-flex;align-items:center;gap:8px}
+  .legend i{display:inline-block;flex:none}
+  .k-sub{width:26px;height:16px;border:1.8px solid var(--sub);border-radius:3px;background:#f4f7fb}
+  .k-sta{width:24px;height:15px;border:1.5px solid var(--a);border-radius:2px;background:#fff;position:relative}
+  .k-sta::after{content:"";position:absolute;left:2px;right:2px;top:6px;height:3px;border-radius:2px;background:var(--a)}
+  .k-sw{width:11px;height:17px;border:1.5px solid var(--a);border-radius:2px;background:#fff}
+  .k-ring{width:26px;height:15px;border:2.6px solid var(--a);border-radius:8px;background:rgba(37,99,235,.07)}
+  .k-cab{width:26px;height:2px;border-radius:1px;background:var(--a)}
+  .k-load{width:26px;height:2px;border-radius:1px;background:var(--dim)}
+  .k-tie{width:26px;height:3px;border-radius:2px;background:var(--tie)}
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="card">
+    <h1>双花瓣配电网 · <em>拓扑总览</em></h1>
+    <p class="sub">两座变电站各出 2 回 10 kV 电缆：甲 1 回 + 乙 1 回 构成花瓣 A，甲 2 回 + 乙 2 回 构成花瓣 B；环网在每座开关站处断开、经进线开关接入站内母线（2 进），再由 4 回出线供至配电房 / 负荷；两花瓣经联络开关互联</p>
+    <div class="stage"><svg id="d" xmlns="http://www.w3.org/2000/svg" viewBox="10 0 1580 912"></svg></div>
+    <div class="legend">
+      <span><i class="k-sub"></i>变电站（10 kV 母线）</span>
+      <span><i class="k-sta"></i>开关站（2 进 4 出）</span>
+      <span><i class="k-sw"></i>进线 / 出线开关</span>
+      <span><i class="k-ring"></i>花瓣环网</span>
+      <span><i class="k-cab"></i>变电站出线电缆</span>
+      <span><i class="k-load"></i>开关站出线至负荷</span>
+      <span><i class="k-tie"></i>联络线 / 联络开关</span>
+    </div>
+  </div>
+</div>
+<script>
+(function () {
+  var NS = 'http://www.w3.org/2000/svg';
+  var svg = document.getElementById('d');
+  var C = { a:'#2563eb', b:'#7048e8', tie:'#e8590c', ink:'#12263f',
+            muted:'#5b7083', dim:'#8fa3b8', sub:'#334155' };
+
+  function mk(tag, at, txt) {
+    var e = document.createElementNS(NS, tag);
+    for (var k in at) e.setAttribute(k, at[k]);
+    if (txt != null) e.textContent = txt;
+    svg.appendChild(e);
+    return e;
+  }
+  function ln(x1, y1, x2, y2, s, w) {
+    return mk('line', {x1:x1, y1:y1, x2:x2, y2:y2, stroke:s, 'stroke-width':w, 'stroke-linecap':'round'});
+  }
+  function dot(x, y, r, s) { return mk('circle', {cx:x, cy:y, r:r, fill:s}); }
+  function tx(x, y, s, o) {
+    o = o || {};
+    var at = {x:x, y:y, 'text-anchor':'middle', 'font-size':12, 'font-weight':600, fill:C.ink};
+    for (var k in o) at[k] = o[k];
+    return mk('text', at, s);
+  }
+  function swBox(cx, cy, w, h, color, deg) {
+    return mk('rect', {x:cx-w/2, y:cy-h/2, width:w, height:h, rx:2.5, fill:'#fff',
+      stroke:color, 'stroke-width':1.5, transform:'rotate('+(deg||0)+' '+cx+' '+cy+')'});
+  }
+
+  /* ================= 尺寸 ================= */
+  var RX = 500, RY = 125;                            // 花瓣环网半径
+  var P1 = { cx:800, cy:268 };                       // 花瓣 A（上）
+  var P2 = { cx:800, cy:657 };                       // 花瓣 B（下）
+  var STA_A = [200, 235, 270, 305, 340];             // 开关站沿花瓣 A 上弧分布
+  var STA_B = [160, 125, 90, 55, 20];                // 开关站沿花瓣 B 下弧分布
+  var busW = 104, swW = 12, swH = 26;                // 站内母线 / 开关尺寸
+  var IN = [0.06, 0.94], OUT = [0.09, 0.37, 0.63, 0.91];
+  var inGap = 42, outLen = 48, lblGap = 26;
+
+  var SUBW = 186;                                    // 变电站箱宽
+  var AX = 30, BX = 1384;                            // 甲乙站左边界
+  var SY0 = 180, SY1 = 720;                          // 站箱上下
+
+  /* ================= 变电站 ================= */
+  function drawSub(x0, name) {
+    var busX = x0 + SUBW / 2;
+    mk('rect',{x:x0,y:SY0,width:SUBW,height:SY1-SY0,rx:10,fill:'#f4f7fb',stroke:C.sub,'stroke-width':2});
+    tx(busX, SY0+34, name, {'font-size':15,'font-weight':700,fill:C.sub,'letter-spacing':2});
+    tx(busX, SY0+56, '10 kV 母线 · 2 回出线', {'font-size':10.5,'font-weight':500,fill:C.muted});
+    ln(busX, SY0+84, busX, SY1-40, C.sub, 6);
+    return { x0:x0, x1:x0+SUBW, busX:busX };
+  }
+  var subA = drawSub(AX, '变电站甲');
+  var subB = drawSub(BX, '变电站乙');
+
+  function feeder(sub, y, tipX, color, label) {
+    ln(sub.busX, y, tipX, y, color, 2.6);
+    var mx = (sub.x1 + tipX) / 2;
+    swBox(mx, y, 40, 16, color, 0);
+    dot(tipX, y, 3.4, color);
+    tx(mx, y - 14, label, {'font-size':11,'font-weight':600,fill:color});
+  }
+  feeder(subA, P1.cy, P1.cx - RX, C.a, '甲 1 回');
+  feeder(subA, P2.cy, P2.cx - RX, C.b, '甲 2 回');
+  feeder(subB, P1.cy, P1.cx + RX, C.a, '乙 1 回');
+  feeder(subB, P2.cy, P2.cx + RX, C.b, '乙 2 回');
+
+  /* ================= 几何工具 ================= */
+  function pt(p, a) { return [p.cx + RX*Math.cos(a), p.cy + RY*Math.sin(a)]; }
+  function angOf(p, x, y) {
+    var a = Math.atan2((y - p.cy) / RY, (x - p.cx) / RX);
+    return a < 0 ? a + 2*Math.PI : a;
+  }
+  function ellNrm(px, py, p) {
+    var nx = (px - p.cx) / (RX*RX), ny = (py - p.cy) / (RY*RY), l = Math.hypot(nx, ny);
+    return [nx/l, ny/l];
+  }
+  function rayHit(p, bx, by, dx, dy) {
+    var A  = (dx*dx)/(RX*RX) + (dy*dy)/(RY*RY);
+    var B  = 2*((bx-p.cx)*dx/(RX*RX) + (by-p.cy)*dy/(RY*RY));
+    var Cc = ((bx-p.cx)*(bx-p.cx))/(RX*RX) + ((by-p.cy)*(by-p.cy))/(RY*RY) - 1;
+    var disc = B*B - 4*A*Cc;
+    if (disc < 0) return null;
+    var r1 = (-B - Math.sqrt(disc))/(2*A), r2 = (-B + Math.sqrt(disc))/(2*A), best = null;
+    [r1, r2].forEach(function (s) { if (s > 0 && (best === null || s < best)) best = s; });
+    return best;
+  }
+
+  /* ================= 一个花瓣：环网 + 沿线开关站 ================= */
+  function drawPetal(o) {
+    var gaps = [];
+
+    var st = o.angles.map(function (tdeg, k) {
+      var t = tdeg*Math.PI/180, P = pt(o.p, t);
+      var N = ellNrm(P[0], P[1], o.p), nx = N[0], ny = N[1];
+      var Tx = ny, Ty = -nx, ang = Math.atan2(-nx, ny)*180/Math.PI;
+      function G(lx, ly) {
+        return [P[0] + nx*(inGap+ly) + Tx*lx, P[1] + ny*(inGap+ly) + Ty*lx];
+      }
+      var ends = IN.map(function (f) {
+        var B0 = G(busW*(f-0.5), 0);
+        var s = rayHit(o.p, B0[0], B0[1], -nx, -ny);
+        if (s === null) return null;
+        return { B0:B0, E:[B0[0] - nx*s, B0[1] - ny*s] };
+      });
+      var aa = ends.filter(Boolean).map(function (e) { return angOf(o.p, e.E[0], e.E[1]); }).sort(function (x,y) { return x-y; });
+      if (aa.length === 2) gaps.push(aa);
+      return { k:k, ident:o.id+(k+1), G:G, ang:ang, ends:ends, color:o.color };
+    });
+
+    /* 环网底色 */
+    mk('ellipse',{cx:o.p.cx, cy:o.p.cy, rx:RX, ry:RY, fill:o.tint});
+
+    /* 环网电缆：在每座开关站处断开 */
+    gaps.sort(function (x, y) { return x[0]-y[0]; });
+    var segs = [], n = gaps.length;
+    for (var i = 0; i < n; i++) {
+      var s0 = gaps[i][1], e0 = gaps[(i+1)%n][0];
+      if (i === n-1) e0 += 2*Math.PI;
+      segs.push([s0, e0]);
+    }
+    var d = '';
+    segs.forEach(function (sg) {
+      var A = pt(o.p, sg[0]), B = pt(o.p, sg[1]);
+      var large = (sg[1]-sg[0]) > Math.PI ? 1 : 0;
+      d += ' M ' + A[0].toFixed(2) + ' ' + A[1].toFixed(2)
+         + ' A ' + RX + ' ' + RY + ' 0 ' + large + ' 1 ' + B[0].toFixed(2) + ' ' + B[1].toFixed(2);
+    });
+    mk('path', {d:d, fill:'none', stroke:o.color, 'stroke-width':3.2, 'stroke-linecap':'round'});
+
+    /* 开关站 */
+    st.forEach(function (s) {
+      var b1 = s.G(-busW/2, 0), b2 = s.G(busW/2, 0);
+      ln(b1[0], b1[1], b2[0], b2[1], s.color, 4.6);            // 站内母线
+
+      s.ends.forEach(function (e) {                            // 2 路进线（环网两侧）
+        if (!e) return;
+        ln(e.B0[0], e.B0[1], e.E[0], e.E[1], s.color, 3.2);
+        swBox((e.B0[0]+e.E[0])/2, (e.B0[1]+e.E[1])/2, swW+1, swH+2, s.color, s.ang);
+      });
+
+      OUT.forEach(function (f) {                               // 4 路出线 → 负荷
+        var lx = busW*(f-0.5), B0 = s.G(lx, 0), E = s.G(lx, outLen), M = s.G(lx, outLen*0.44);
+        ln(B0[0], B0[1], E[0], E[1], C.dim, 1.8);
+        swBox(M[0], M[1], swW, swH, C.dim, s.ang);
+        dot(E[0], E[1], 2.8, C.dim);
+      });
+
+      var L = s.G(0, outLen + lblGap);
+      tx(L[0], L[1]+4, '开关站 ' + s.ident,
+         {'font-size':11.5,'font-weight':700,fill:C.muted,'letter-spacing':1});
+    });
+  }
+
+  drawPetal({p:P1, color:C.a, tint:'rgba(37,99,235,.05)',  id:'A', angles:STA_A});
+  drawPetal({p:P2, color:C.b, tint:'rgba(112,72,232,.05)', id:'B', angles:STA_B});
+
+  /* ================= 花瓣名 ================= */
+  function petalName(p, color, name) {
+    tx(p.cx, p.cy + 4, name, {'font-size':17,'font-weight':700,fill:color,'letter-spacing':4});
+    tx(p.cx, p.cy + 30, '环网：甲 1 回 + 乙 1 回', {'font-size':11.5,'font-weight':500,fill:C.muted});
+  }
+  petalName(P1, C.a, '花瓣 A');
+  petalName(P2, C.b, '花瓣 B');
+
+  /* ================= 联络线（两花瓣之间） ================= */
+  var ty1 = P1.cy + RY, ty2 = P2.cy - RY, mx0 = P1.cx;
+  ln(mx0, ty1, mx0, ty2, C.tie, 2.8);
+  mk('line',{x1:mx0,y1:ty1,x2:mx0,y2:ty2,stroke:'#fff','stroke-width':1.4,
+    'stroke-dasharray':'2 14','class':'flow','stroke-linecap':'round'});
+  swBox(mx0, (ty1+ty2)/2, 28, 40, C.tie, 0);
+  dot(mx0, ty1, 3.6, C.tie);
+  dot(mx0, ty2, 3.6, C.tie);
+  tx(mx0 + 44, (ty1+ty2)/2 + 5, '联络开关（两花瓣互联）',
+     {'text-anchor':'start','font-size':12,'font-weight':600,fill:C.tie});
+})();
+</script>
+</body>
+</html>

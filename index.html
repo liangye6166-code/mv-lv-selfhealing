@@ -1,0 +1,1400 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>双花瓣配电网 · 可编辑 / 可仿真原型</title>
+<style>
+  :root{--ink:#12263f;--muted:#5b7083;--a:#1d4ed8;--b:#0d9488;--tie:#e8590c;
+        --sub:#334155;--bg:#eaeff6;--live:#0f8a4a;--dead:#b9c4d2;--line:#e6ebf2;}
+  *{box-sizing:border-box}
+  html,body{height:100%;margin:0}
+  body{background:var(--bg);color:var(--ink);overflow:hidden;
+    font:13px/1.55 -apple-system,"PingFang SC","Hiragino Sans GB","Noto Sans CJK SC",system-ui,sans-serif}
+  .pane{background:#fff;border-radius:13px;box-shadow:0 6px 20px rgba(18,38,63,.09)}
+  .app{height:100dvh;display:flex;flex-direction:column;gap:9px;padding:11px 13px}
+  .topbar{padding:9px 15px 10px;display:flex;flex-direction:column;gap:8px}
+  .hdr{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+  h1{margin:0;font-size:17px;letter-spacing:.3px;display:flex;align-items:center;gap:9px;white-space:nowrap}
+  h1::before{content:'';width:4px;height:18px;border-radius:2px;background:linear-gradient(180deg,#1d4ed8,#0d9488)}
+  .sub{color:var(--muted);font-size:11.5px;flex:1;min-width:220px}
+  .sub code{background:#f1f5fa;border-radius:4px;padding:1px 5px;color:#33465c}
+  h1+.sub{margin:0}
+  .tags{display:flex;gap:7px;flex-wrap:wrap}
+  .tag{display:flex;gap:6px;align-items:center;border:1px solid #e4eaf3;background:#f8fafc;
+    border-radius:999px;padding:3px 11px;font-size:11.5px;color:var(--muted);white-space:nowrap}
+  .tag b{color:var(--ink);font-size:12.5px}
+  .tag i{font-style:normal;width:6px;height:6px;border-radius:50%;background:#9fb0c4}
+  .tag.ok{border-color:#cfe9db;background:#f1faf5}.tag.ok i{background:var(--live)}.tag.ok b{color:#0b6b3a}
+  .tag.bad{border-color:#f6d5d5;background:#fdf4f4}.tag.bad i{background:#d6336c;animation:fltpulse 1.1s infinite}.tag.bad b{color:#c2255c}
+  .tag.warn{border-color:#f3e2c4;background:#fdf9f0}.tag.warn i{background:#e8590c}.tag.warn b{color:#b8730b}
+  .tag.act{border-color:#cddcf5;background:#f2f7ff}.tag.act i{background:#1d4ed8}
+  .bar{display:flex;gap:7px;flex-wrap:wrap;align-items:center}
+  button{border:1px solid #cfd8e3;background:#f8fafc;border-radius:8px;padding:5px 11px;
+    cursor:pointer;font-size:12.5px;color:var(--ink);white-space:nowrap}
+  button:hover{background:#eef3fa;border-color:#b9c6d6}
+  button.mini{padding:1px 8px;font-size:11.5px;border-radius:6px;line-height:1.7}
+  button.primary{background:#12263f;border-color:#12263f;color:#fff}
+  button.primary:hover{background:#1d3557}
+  .sep{width:1px;height:20px;background:#e6ebf2;margin:0 3px}
+  .ctl{display:flex;gap:7px;align-items:center;color:var(--muted);font-size:11.5px;white-space:nowrap}
+  .ctl input[type=range]{width:104px;accent-color:#1d4ed8}
+  .ctl b{color:var(--ink);font-size:12px;min-width:32px;text-align:right}
+  .hint{color:var(--muted);font-size:11.5px;margin-left:auto;white-space:nowrap}
+  .mid{flex:1;min-height:0;display:grid;grid-template-columns:292px minmax(0,1fr) 338px;gap:9px}
+  .mid.focus{grid-template-columns:minmax(0,1fr)}
+  .mid.focus .side{display:none}
+  .side{display:flex;flex-direction:column;gap:9px;min-height:0;overflow:auto;padding-right:2px}
+  .side::-webkit-scrollbar{width:8px}
+  .side::-webkit-scrollbar-thumb{background:#d3dce7;border-radius:4px}
+  .box{padding:10px 13px;flex:0 0 auto}
+  .box>b{display:block;margin:0 0 8px;padding-bottom:6px;font-size:12.5px;color:var(--ink);
+    border-bottom:1px solid #eef1f6}
+  .box>b::before{content:'';display:inline-block;width:7px;height:7px;border-radius:50%;
+    background:#1d4ed8;margin-right:7px;vertical-align:1px}
+  .stage{padding:7px;display:flex;min-height:0}
+  svg.d{flex:1;width:100%;height:100%;min-height:0;display:block;background:#fdfeff;
+    border:1px solid var(--line);border-radius:9px;touch-action:none;user-select:none;cursor:default}
+  .foot{padding:7px 15px;display:flex;gap:10px;align-items:center;font-size:12.5px;min-height:36px}
+  .foot .t{color:#c92a2a;font-weight:700;white-space:nowrap}
+  .foot .msg{color:var(--muted);flex:1}
+  /* ── 工作台自适应：中小屏自动收窄侧栏、压缩顶栏，保证一屏放得下 ── */
+  @media (max-width:1680px){ .mid{grid-template-columns:268px minmax(0,1fr) 312px} }
+  @media (max-width:1500px){
+    .mid{grid-template-columns:250px minmax(0,1fr) 292px}
+    .box{padding:9px 11px}
+    .legend{grid-template-columns:1fr;gap:5px}
+    .legend span{font-size:10.5px}
+  }
+  @media (max-width:1330px){ .mid{grid-template-columns:228px minmax(0,1fr) 264px} .hint{display:none} }
+  @media (max-height:880px){
+    .app{gap:7px;padding:9px 11px}
+    .topbar{padding:7px 12px 8px;gap:6px}
+    h1{font-size:15.5px}
+    .foot{min-height:31px;padding:5px 12px;font-size:12px}
+    .stage{padding:6px}
+  }
+  @media (max-height:790px){
+    .sub{display:none}
+    .tags{gap:6px}
+    .tag{padding:2px 9px}
+    h1{font-size:15px}
+  }
+  select{font:inherit;font-size:12.5px;border:1px solid #cfd8e3;background:#f8fafc;width:100%;
+    border-radius:8px;padding:5px 8px;color:var(--ink)}
+  .tl{display:flex;flex-direction:column;gap:4px;margin-top:8px}
+  .tl .chip{padding:4px 10px;border-radius:8px;border:1px solid #e6ebf2;background:#f8fafc;
+    color:var(--muted);font-size:11.5px}
+  .tl .chip.on{background:#12263f;border-color:#12263f;color:#fff;font-weight:700}
+  .tl .chip.done{background:#e8f5ee;border-color:#bcdfcd;color:#0f8a4a}
+  .tlmsg{margin-top:7px;color:var(--muted);font-size:11.5px}
+  .impbox{display:none;margin-top:8px}
+  .impbox textarea{width:100%;height:76px;border:1px solid #cfd8e3;border-radius:8px;padding:7px 9px;
+    font:12px/1.6 ui-monospace,Menlo,Consolas,monospace;resize:vertical}
+  .improw{display:flex;gap:7px;align-items:center;margin-top:6px;flex-wrap:wrap}
+  .legend{display:grid;grid-template-columns:1fr 1fr;gap:7px 10px;font-size:11px;color:var(--muted)}
+  .legend span{display:flex;gap:6px;align-items:center}
+  .ok{color:var(--live)}.bad{color:#d6336c}.warn{color:#b8730b}
+  .kv{color:var(--muted);font-size:12px;margin:3px 0}
+  .kv i{font-style:normal;color:var(--ink);font-weight:600}
+  .row{display:flex;gap:6px;align-items:center;margin:5px 0;flex-wrap:wrap}
+  .row input[type=text]{border:1px solid #cfd8e3;border-radius:6px;padding:3px 8px;
+    font:inherit;font-size:12.5px;width:120px}
+  .sw{display:flex;justify-content:space-between;gap:8px;padding:3px 0;
+    border-bottom:1px dashed #eef1f6;align-items:center}
+  .sw:last-child{border-bottom:0}
+  .sw em{font-style:normal;color:var(--muted);font-size:11px}
+  .sw .nm{min-width:70px}
+  @keyframes flowdash{to{stroke-dashoffset:-28}}
+  .flow{stroke-dasharray:2 26;animation:flowdash 1.3s linear infinite}
+  .flow.rev{animation-direction:reverse}
+  @keyframes fltpulse{0%,100%{opacity:1}50%{opacity:.45}}
+  .fltpulse{animation:fltpulse 1.1s ease-in-out infinite}
+  .ctx{position:fixed;z-index:60;display:none;min-width:176px;padding:5px;background:#fff;
+    border:1px solid #d7dfe9;border-radius:10px;box-shadow:0 10px 26px rgba(18,38,63,.18)}
+  .ctx .hd{padding:4px 10px 6px;font-size:11.5px;color:var(--muted);border-bottom:1px solid #eef1f6;margin-bottom:4px}
+  .ctx button{display:block;width:100%;text-align:left;border:0;background:none;padding:6px 10px;
+    border-radius:6px;font-size:12.5px;color:var(--ink);cursor:pointer}
+  .ctx button:hover{background:#eef3fa}
+  .ctx button.danger{color:#c92a2a}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="pane topbar">
+    <div class="hdr">
+      <h1>双花瓣配电网 · 仿真工作台</h1>
+      <p class="sub">开关站图元 <code>横置母线 + 2 回进线 + 4 回出线</code>；2 回进线始终朝向花瓣内侧的环网，4 回出线朝外接配电房；相邻站由 <code>进线2 → 下一站进线1</code> 首尾串成花瓣环，每座变电站只出 <code>2 根</code> 10 kV 电缆。<code>拖动</code>图元/电缆 · <code>点击</code>开关分合 · 端子<code>拖拽</code>接线 · <code>右键</code>菜单。</p>
+      <button id="bFocus">⛶ 专注画布</button>
+    </div>
+    <div class="tags" id="tags"></div>
+    <div class="bar">
+      <button id="bAllClose">全部合闸</button>
+      <button id="bAllOpen">全部分闸</button>
+      <button id="bReset">复位拓扑</button>
+      <button id="bUndo">撤销</button>
+      <span class="sep"></span>
+      <button id="bExport">导出 JSON</button>
+      <button id="bImport">导入 JSON</button>
+      <input type="file" id="fImport" accept=".json" style="display:none">
+      <span class="sep"></span>
+      <span class="ctl">图元大小 <input type="range" id="rSz" min="55" max="130" step="5" value="80"><b id="lSz">80%</b></span>
+      <span class="sep"></span>
+      <button id="bOut" class="primary" title="让每座开关站的 4 回出线一律背向花瓣中心，环网走向更清楚">出线朝外 ✓</button>
+      <span class="hint" id="hint"></span>
+    </div>
+  </div>
+
+  <div class="mid" id="mid">
+    <aside class="side">
+      <div class="pane box">
+        <b>故障演练 · 场景库</b>
+        <select id="selScene" title="预置故障场景"></select>
+        <div class="row" style="margin-top:9px">
+          <button id="bPlay" class="primary">▶ 自动演示</button>
+          <button id="bStep">单步</button>
+          <button id="bClearFault">复位运行方式</button>
+        </div>
+        <div class="row">
+          <button id="bFault" class="mini">① 模拟故障</button>
+          <button id="bIso" class="mini">② 隔离故障</button>
+          <button id="bRestore" class="mini">③ 转供恢复</button>
+          <button id="bImpFault" class="mini">导入故障点…</button>
+        </div>
+        <div class="tl" id="tlRow">
+          <span class="chip on" data-s="0">正常运行</span>
+          <span class="chip" data-s="1">① 故障发生 · 保护动作</span>
+          <span class="chip" data-s="2">② 故障隔离</span>
+          <span class="chip" data-s="3">③ 转供恢复供电</span>
+        </div>
+        <div class="tlmsg" id="tlMsg">尚未开始</div>
+        <div class="impbox" id="impBox">
+          <textarea id="impTxt" spellcheck="false" placeholder="每行一个故障点，格式：名称 | 目标
+目标可以是：电缆编号 w18 ；开关站 A2 ；端子 A3:in2
+例：
+环网主干 A1-A2 故障 | w18
+A2 母线故障 | A2"></textarea>
+          <div class="improw">
+            <button id="bImpGo">载入为场景</button>
+            <button id="bImpCancel">取消</button>
+          </div>
+          <div class="kv" id="impHint"></div>
+        </div>
+      </div>
+      <div class="pane box">
+        <b>图例</b>
+        <div class="legend">
+          <span><svg width="30" height="18"><rect x="7" y="3" width="16" height="12" rx="2" fill="#f4f7fb" stroke="#334155" stroke-width="1.5"/><line x1="15" y1="5" x2="15" y2="13" stroke="#334155" stroke-width="3"/></svg>变电站（10 kV 电源）</span>
+          <span><svg width="34" height="18"><line x1="4" y1="9" x2="30" y2="9" stroke="#1d4ed8" stroke-width="3"/><line x1="11" y1="9" x2="11" y2="4" stroke="#1d4ed8" stroke-width="1.6"/><line x1="23" y1="9" x2="23" y2="4" stroke="#1d4ed8" stroke-width="1.6"/><line x1="7" y1="9" x2="7" y2="14" stroke="#1d4ed8" stroke-width="1.6"/><line x1="14" y1="9" x2="14" y2="14" stroke="#1d4ed8" stroke-width="1.6"/><line x1="20" y1="9" x2="20" y2="14" stroke="#1d4ed8" stroke-width="1.6"/><line x1="27" y1="9" x2="27" y2="14" stroke="#1d4ed8" stroke-width="1.6"/></svg>开关站（2 进 4 出）</span>
+          <span><svg width="22" height="18"><path d="M3 3 L19 3 L11 16 Z" fill="#dbe7ff" stroke="#1d4ed8" stroke-width="1.5"/></svg>配电房（负荷）</span>
+          <span><svg width="24" height="18"><line x1="2" y1="9" x2="22" y2="9" stroke="#1d4ed8" stroke-width="2"/><rect x="8" y="4" width="8" height="11" rx="1.5" fill="#fff" stroke="#1d4ed8" stroke-width="1.5"/></svg>开关合闸</span>
+          <span><svg width="24" height="18"><line x1="2" y1="9" x2="7" y2="9" stroke="#db2777" stroke-width="2"/><line x1="17" y1="9" x2="22" y2="9" stroke="#db2777" stroke-width="2"/><rect x="8" y="4" width="8" height="11" rx="1.5" fill="#fff" stroke="#db2777" stroke-width="1.5" transform="rotate(-32 12 9)"/></svg>开关分闸</span>
+          <span><svg width="28" height="18"><line x1="2" y1="9" x2="26" y2="9" stroke="#e8590c" stroke-width="2" stroke-dasharray="6 4"/></svg>联络开关（常开）</span>
+          <span><svg width="28" height="18"><line x1="2" y1="9" x2="26" y2="9" stroke="#2f9e63" stroke-width="2"/><path d="M14 9 L8 6 L8 12 Z" fill="#2f9e63"/></svg>潮流方向</span>
+          <span><svg width="28" height="18"><line x1="2" y1="9" x2="26" y2="9" stroke="#b9c4d2" stroke-width="2"/></svg>失电（无压）</span>
+          <span><svg width="22" height="18"><circle cx="11" cy="9" r="6" fill="#fff" stroke="#e03131" stroke-width="1.5" stroke-dasharray="3 3"/></svg>故障点 / 隔离点</span>
+          <span><svg width="22" height="18"><circle cx="11" cy="9" r="7" fill="#e03131"/><text x="11" y="13" text-anchor="middle" font-size="10" font-weight="700" fill="#fff">1</text></svg>动作顺序号</span>
+          <span><svg width="34" height="18"><line x1="4" y1="9" x2="30" y2="9" stroke="#1d4ed8" stroke-width="2.6"/><line x1="11" y1="9" x2="11" y2="4" stroke="#1d4ed8" stroke-width="1.4"/><line x1="23" y1="9" x2="23" y2="4" stroke="#1d4ed8" stroke-width="1.4"/><line x1="11" y1="9" x2="11" y2="14" stroke="#94a3b8" stroke-width="1.2"/><line x1="23" y1="9" x2="23" y2="14" stroke="#94a3b8" stroke-width="1.2"/></svg>2 回进线朝内 · 4 回出线朝外</span>
+        </div>
+      </div>
+    </aside>
+
+    <section class="stage pane">
+      <svg class="d" id="d" viewBox="50 60 1500 780" xmlns="http://www.w3.org/2000/svg"></svg>
+    </section>
+
+    <aside class="side">
+      <div class="pane box"><b>运行状态</b><div id="pRun"></div></div>
+      <div class="pane box"><b>校验 / 告警</b><div id="pChk"></div></div>
+      <div class="pane box"><b>选中图元 · 编辑 · 通断分析</b><div id="pSel"></div></div>
+    </aside>
+  </div>
+
+  <div class="pane foot">
+    <span class="t">状态</span>
+    <span class="msg" id="faultMsg">选择场景后点“自动演示”，或先选中电缆/开关站再点 ①。</span>
+  </div>
+</div>
+
+<div class="ctx" id="ctx"></div>
+
+<script>
+(function(){
+'use strict';
+var NS='http://www.w3.org/2000/svg';
+var SVG=document.getElementById('d');
+var COL={a:'#1d4ed8',b:'#0d9488',tie:'#e8590c',ink:'#12263f',muted:'#5b7083',
+         sub:'#334155',live:'#0f8a4a',cur:'#2f9e63',dead:'#b9c4d2',open:'#db2777',
+         aLite:'#dbe7ff',bLite:'#d5f0ea',flt:'#e03131'};
+var TYPE={sub:'变电站（10 kV 电源）',sta:'开关站（2 进 4 出）',ld:'配电房（负荷）'};
+var SZ=.80;                     /* 图元统一缩放（变电站保持 1） */
+
+/* ================= 图元定义（局部坐标，一律不旋转：进线朝上、出线朝下）================= */
+function staTerms(){
+  return [
+    {id:'in1', n:'进线1', k:'in', dir:[0,-1], bx:-15,by:0, tx:-15,ty:-34},
+    {id:'in2', n:'进线2', k:'in', dir:[0,-1], bx: 15,by:0, tx: 15,ty:-34},
+    {id:'out1',n:'出线1', k:'ld', dir:[0, 1], bx:-35,by:0, tx:-35,ty: 34},
+    {id:'out2',n:'出线2', k:'ld', dir:[0, 1], bx:-12,by:0, tx:-12,ty: 34},
+    {id:'out3',n:'出线3', k:'sp', dir:[0, 1], bx: 12,by:0, tx: 12,ty: 34},
+    {id:'out4',n:'出线4', k:'sp', dir:[0, 1], bx: 35,by:0, tx: 35,ty: 34}
+  ];
+}
+function subTerms(mir){ var s=mir?-1:1;
+  return [
+    {id:'f1',n:'10kV 出线1',k:'line',dir:[s,0],bx:0,by:-40,tx:95*s,ty:-40},
+    {id:'f2',n:'10kV 出线2',k:'line',dir:[s,0],bx:0,by: 40,tx:95*s,ty: 40}
+  ];
+}
+function ldTerms(){ return [{id:'t',n:'配电房',k:'load',dir:[0,-1],bx:0,by:-16,tx:0,ty:0}]; }
+
+/* ================= 场景几何 ================= */
+var SAX=180,SBX=1420,SY=430,TIP=95,MID=800;
+var F1=SY-40, F2=SY+40, AX0=SAX+TIP, BX0=SBX-TIP;
+function arc(x0,y0,x1,y1,ty,sp){
+  var c=(8*ty-y0-y1)/6, d=(x1-x0)*(sp||0.22);
+  return {p0:[x0,y0],p1:[x0+d,c],p2:[x1-d,c],p3:[x1,y1]};
+}
+function bez(t,a){ var u=1-t,b0=u*u*u,b1=3*u*u*t,b2=3*u*t*t,b3=t*t*t;
+  return [b0*a.p0[0]+b1*a.p1[0]+b2*a.p2[0]+b3*a.p3[0],
+          b0*a.p0[1]+b1*a.p1[1]+b2*a.p2[1]+b3*a.p3[1]]; }
+function at(a,t){ var p=bez(t,a); return {x:p[0],y:p[1]}; }
+function petals(){
+  return { top1:arc(AX0,F1,MID,420,240), bot1:arc(MID,440,AX0,F2,640),
+           top2:arc(BX0,F1,MID,420,240), bot2:arc(MID,440,BX0,F2,640) };
+}
+
+/* ================= 数据 ================= */
+var DEV={},ORDER=[],WIRES=[],SEQ=0,UNDO=[],SEL=null,EN={},SRC=[],SIM={},FLOW={},DEADSRC={},
+    FAULT=null,drag=null,PREV=null;
+
+function addDev(o){ o.terms=o.terms.map(function(t){ if(t.sw===undefined) t.sw=true; return t; });
+  DEV[o.id]=o; ORDER.push(o.id); return o; }
+function clearArr(a){ a.length=0; return a; }
+function findTermObj(d,t){ var x=DEV[d]; if(!x) return null;
+  for(var i=0;i<x.terms.length;i++) if(x.terms[i].id===t) return x.terms[i]; return null; }
+function findWire(id){ for(var i=0;i<WIRES.length;i++) if(WIRES[i].id===id) return WIRES[i]; return null; }
+function xf(d,lx,ly){ var y=d.flip?-ly:ly, r=d.rot*Math.PI/180,c=Math.cos(r),s=Math.sin(r);
+  return [d.x+lx*c-y*s, d.y+lx*s+y*c]; }
+function dirW(d,t){ var r=d.rot*Math.PI/180,c=Math.cos(r),s=Math.sin(r),lx=t.dir[0],
+  ly=d.flip?-t.dir[1]:t.dir[1];
+  return [lx*c-ly*s, lx*s+ly*c]; }
+function kOf(d){ return d.type==='sub'?1:SZ; }
+function tp(d,t){ var k=kOf(d); return xf(d,t.tx*k,t.ty*k); }
+var DROP=140, MINSEP=46;
+function placeLoads(){
+  var grp={};
+  ORDER.forEach(function(id){ var d=DEV[id];
+    if(d.type!=='ld'||!d.host||!DEV[d.host]) return;
+    var h=DEV[d.host], t=findTermObj(d.host,d.hterm); if(!t) return;
+    var p=tp(h,t), g=grp[d.host]||(grp[d.host]=[]);
+    g.push({d:d,x:p[0],y:p[1]+(h.flip?-DROP:DROP)});
+  });
+  for(var k in grp){ var a=grp[k].sort(function(u,v){ return u.x-v.x; });
+    if(a.length===2&&a[1].x-a[0].x<MINSEP){
+      var m=(a[0].x+a[1].x)/2; a[0].x=m-MINSEP/2; a[1].x=m+MINSEP/2; }
+    a.forEach(function(o){ o.d.x=Math.round(o.x); o.d.y=Math.round(o.y); }); }
+}
+function T(d,t){ return DEV[d]&&findTermObj(d,t); }
+function hasWire(a,b){ var k1=a[0]+':'+a[1], k2=b[0]+':'+b[1];
+  return WIRES.some(function(w){ var x=w.a.d+':'+w.a.t, y=w.b.d+':'+w.b.t;
+    return (x===k1&&y===k2)||(x===k2&&y===k1); }); }
+function wire(a,b){ if(hasWire(a,b)) return; WIRES.push({id:'w'+(++SEQ),a:{d:a[0],t:a[1]},
+  b:{d:b[0],t:b[1]},bias:[0,0]}); }
+function open(dev,ids){ ids.forEach(function(i){ var t=findTermObj(dev,i); if(t) t.sw=false; }); }
+
+function build(){
+  clearArr(ORDER); clearArr(WIRES); SEQ=0; SEL=null; UNDO=[]; PREV=null; FAULT=null; DEADSRC={};
+  for(var _k in DEV) delete DEV[_k];
+  var P=petals();
+  addDev({id:'SUBA',type:'sub',name:'变电站甲',x:SAX,y:SY,rot:0,pet:'a',color:COL.sub,terms:subTerms(false)});
+  addDev({id:'SUBB',type:'sub',name:'变电站乙',x:SBX,y:SY,rot:0,pet:'b',color:COL.sub,terms:subTerms(true)});
+  /* 每片花瓣 4 座开关站，均匀分布在花瓣上下两边；上边两座翻转，使 4 回出线一律背向花瓣中心（冲外）*/
+  var STA=[['A1',400,330,1],['A2',700,330,1],['A3',700,570,0],['A4',400,570,0],
+           ['B1',1200,330,1],['B2',900,330,1],['B3',900,570,0],['B4',1200,570,0]];
+  STA.forEach(function(s){
+    var isA=(s[0].charAt(0)==='A');
+    addDev({id:s[0],type:'sta',name:'开关站 '+s[0],x:s[1],y:s[2],rot:0,flip:s[3],flip0:s[3],
+            pet:isA?'a':'b',color:isA?COL.a:COL.b,terms:staTerms()});
+  });
+  STA.forEach(function(s){
+    var d=DEV[s[0]];
+    [['out1','_L1'],['out2','_L2']].forEach(function(o){
+      var t=findTermObj(s[0],o[0]), lid=s[0]+o[1];
+      addDev({id:lid,type:'ld',name:'配电房 '+s[0]+o[1].slice(-1),x:Math.round(d.x+t.tx),y:Math.round(d.y+DROP),
+              rot:0,pet:d.pet,color:COL.sub,host:s[0],hterm:o[0],terms:ldTerms()});
+      wire([s[0],o[0]],[lid,'t']);
+    });
+  });
+  placeLoads();
+  wire(['SUBA','f1'],['A1','in1']);
+  wire(['A1','in2'],['A2','in1']);
+  wire(['A2','in2'],['A3','in1']);
+  wire(['A3','in2'],['A4','in1']);
+  wire(['A4','in2'],['SUBA','f2']);
+  wire(['SUBB','f1'],['B1','in1']);
+  wire(['B1','in2'],['B2','in1']);
+  wire(['B2','in2'],['B3','in1']);
+  wire(['B3','in2'],['B4','in1']);
+  wire(['B4','in2'],['SUBB','f2']);
+  findTermObj('A2','out4').n='联络出线';
+  var t2=findTermObj('B2','out4'); t2.n='联络开关'; t2.tie=true; t2.sw=false;
+  wire(['A2','out4'],['B2','out4']);
+  open('A3',['in2']);
+  open('B3',['in2']);
+  SRC=['SUBA','SUBB'];
+}
+
+/* ================= 仿真：并查集 + BFS 潮流 ================= */
+function simulate(){
+  var p={},keys=[];
+  function find(a){ if(p[a]===undefined){p[a]=a;keys.push(a);}
+    while(p[a]!==a){ p[a]=p[p[a]]; a=p[a]; } return a; }
+  function uni(a,b){ a=find(a); b=find(b); if(a!==b) p[b]=a; }
+  ORDER.forEach(function(id){
+    var d=DEV[id];
+    find(id+':bus');
+    d.terms.forEach(function(t){ var k=id+':'+t.id; find(k); if(t.sw) uni(k,id+':bus'); });
+  });
+  WIRES.forEach(function(w){ var a=w.a.d+':'+w.a.t, b=w.b.d+':'+w.b.t;
+    if(p[a]===undefined||p[b]===undefined) return; uni(a,b); });
+  var roots=SRC.filter(function(s){ return !DEADSRC[s]; })
+             .map(function(s){ return find(s+':bus'); });
+  EN={};
+  ORDER.forEach(function(id){
+    var d=DEV[id];
+    EN[id+':bus']=roots.indexOf(find(id+':bus'))>=0;
+    d.terms.forEach(function(t){ EN[id+':'+t.id]=roots.indexOf(find(id+':'+t.id))>=0; });
+  });
+  SIM.paired = roots.length>1 && roots[0]===roots[1];
+  SIM.parent=p; SIM.find=find;
+  FLOW=flow(p,find);
+  return SIM;
+}
+function flow(p,find){
+  var adj={};
+  function add(a,b,wid){ (adj[a]=adj[a]||[]).push([b,wid]); }
+  ORDER.forEach(function(id){ var d=DEV[id];
+    d.terms.forEach(function(t){ if(!t.sw) return; var k=id+':'+t.id;
+      add(k,id+':bus',null); add(id+':bus',k,null); }); });
+  WIRES.forEach(function(w){ var a=w.a.d+':'+w.a.t, b=w.b.d+':'+w.b.t;
+    add(a,b,w.id); add(b,a,w.id); });
+  var depth={}, q=[];
+  SRC.forEach(function(s){ depth[s+':bus']=0; q.push(s+':bus'); });
+  for(var i=0;i<q.length;i++){ var u=q[i];
+    (adj[u]||[]).forEach(function(e){ if(depth[e[0]]===undefined&&p[e[0]]!==undefined){
+      depth[e[0]]=depth[u]+1; q.push(e[0]); } }); }
+  var dir={};
+  WIRES.forEach(function(w){ var a=w.a.d+':'+w.a.t, b=w.b.d+':'+w.b.t;
+    if(depth[a]===undefined||depth[b]===undefined) return;
+    if(find(a)!==find(b)) return;
+    if(depth[a]<depth[b]) dir[w.id]=1; else if(depth[b]<depth[a]) dir[w.id]=-1; });
+  return {depth:depth,dir:dir};
+}
+function liveLoads(){ var n=0; ORDER.forEach(function(id){
+  if(DEV[id].type==='ld'&&EN[id+':t']) n++; }); return n; }
+function deadLoads(){ var n=0; ORDER.forEach(function(id){
+  if(DEV[id].type==='ld'&&!EN[id+':t']) n++; }); return n; }
+function impacted(did,tid){
+  var t=findTermObj(did,tid); if(!t) return [];
+  var o1=t.sw,o2=EN,o3=SIM.paired,o4=FLOW;
+  t.sw=false; simulate();
+  var out=[];
+  ORDER.forEach(function(id){ if(DEV[id].type==='ld'&&!EN[id+':t']) out.push(DEV[id].name); });
+  t.sw=o1; EN=o2; SIM.paired=o3; FLOW=o4;
+  return out;
+}
+
+/* ================= 走线（直角圆角；bias 为拖动后的偏移）================= */
+function num(n){ return Math.round(n*10)/10; }
+function simplify(pts){
+  var out=[];
+  pts.forEach(function(p){ var l=out[out.length-1];
+    if(!l||Math.abs(l[0]-p[0])>0.01||Math.abs(l[1]-p[1])>0.01) out.push([p[0],p[1]]); });
+  if(out.length<3) return out;
+  var res=[out[0]];
+  for(var i=1;i<out.length-1;i++){
+    var a=res[res.length-1],b=out[i],c=out[i+1];
+    if(Math.abs((b[0]-a[0])*(c[1]-b[1])-(b[1]-a[1])*(c[0]-b[0]))>0.01) res.push(b);
+  }
+  res.push(out[out.length-1]);
+  return res;
+}
+function pathOf(pts,r){
+  if(pts.length<3) return 'M'+num(pts[0][0])+' '+num(pts[0][1])+' L'+num(pts[pts.length-1][0])+' '+num(pts[pts.length-1][1]);
+  var d='M'+num(pts[0][0])+' '+num(pts[0][1]);
+  for(var i=1;i<pts.length-1;i++){
+    var p0=pts[i-1],p1=pts[i],p2=pts[i+1];
+    var l1=Math.hypot(p1[0]-p0[0],p1[1]-p0[1]), l2=Math.hypot(p2[0]-p1[0],p2[1]-p1[1]);
+    if(l1<0.5||l2<0.5) continue;
+    var rr=Math.min(r,l1/2,l2/2);
+    var u1=[(p1[0]-p0[0])/l1,(p1[1]-p0[1])/l1], u2=[(p2[0]-p1[0])/l2,(p2[1]-p1[1])/l2];
+    var a=[p1[0]-u1[0]*rr,p1[1]-u1[1]*rr], b=[p1[0]+u2[0]*rr,p1[1]+u2[1]*rr];
+    d+=' L'+num(a[0])+' '+num(a[1])+' Q'+num(p1[0])+' '+num(p1[1])+' '+num(b[0])+' '+num(b[1]);
+  }
+  var e=pts[pts.length-1];
+  return d+' L'+num(e[0])+' '+num(e[1]);
+}
+function route(A,da,B,db,bias){
+  var bx=(bias&&bias[0])||0, by=(bias&&bias[1])||0, s=24;
+  var A2=[A[0]+da[0]*s,A[1]+da[1]*s], B2=[B[0]+db[0]*s,B[1]+db[1]*s];
+  var ha=Math.abs(da[0])>Math.abs(da[1]), hb=Math.abs(db[0])>Math.abs(db[1]);
+  var pts;
+  if(!ha&&!hb){                                   /* 两端竖直：进线—进线 / 出线—配电房 */
+    var ahead=(B[1]-A[1])*da[1]>0;
+    if(da[1]*db[1]<0){                            /* 一进一出：Z 形 */
+      if(ahead){ pts=[A,A2,[B2[0],A2[1]],B2,B]; }
+      else { var ym0=(A2[1]+B2[1])/2; pts=[A,A2,[A2[0],ym0],[B2[0],ym0],B2,B]; }
+    } else if(ahead){                             /* 同向且在其正前方：直进直出 */
+      pts=[A,A2,[A2[0],B2[1]],[B2[0],B2[1]],B2,B];
+    } else {                                      /* 同向且在身后：U 形绕行（环网相邻站） */
+      var yc=da[1]>0?Math.max(A2[1],B2[1]):Math.min(A2[1],B2[1]);
+      pts=[A,A2,[A2[0],yc],[B2[0],yc],B2,B];
+    }
+  } else if(ha&&hb){                              /* 两端水平（变电站）*/
+    if(Math.abs(A2[1]-B2[1])<20){
+      var yy=A2[1]+(by!==0?by:36*(bx>=0?1:-1));
+      pts=[A,A2,[A2[0],yy],[B2[0],yy],B];
+    } else {
+      var tx=(A2[0]+B2[0])/2+bx;
+      pts=[A,A2,[tx,A2[1]],[tx,B2[1]],B];
+    }
+  } else if(!ha&&hb){                             /* A 竖直、B 水平 */
+    var xj3=A2[0]+bx, yj3=B2[1]+db[1]*24+by;
+    pts=[A,A2,[xj3,A2[1]],[xj3,yj3],[B2[0],yj3],B];
+  } else {                                        /* A 水平、B 竖直 */
+    var yj4=B2[1]+by;
+    pts=[A,A2,[A2[0],yj4],[B2[0],yj4],B];
+  }
+  pts.splice(pts.length-1,0,B2);   /* 沿端子方向直进直出，保证线一定落到节点上 */
+  pts=simplify(pts);
+  return {pts:pts,d:pathOf(pts,11)};
+}
+function wpath(w){
+  var dA=DEV[w.a.d], dB=DEV[w.b.d], tA=T(w.a.d,w.a.t), tB=T(w.b.d,w.b.t);
+  if(!dA||!dB||!tA||!tB) return null;
+  var A=tp(dA,tA), B=tp(dB,tB);
+  var r=route(A,dirW(dA,tA),B,dirW(dB,tB),w.bias||[0,0]);
+  r.A=A; r.B=B;
+  return r;
+}
+function longestMid(pts){
+  var bi=0,bl=-1;
+  for(var i=0;i<pts.length-1;i++){
+    var L=Math.hypot(pts[i+1][0]-pts[i][0],pts[i+1][1]-pts[i][1]);
+    if(L>bl){ bl=L; bi=i; }
+  }
+  if(bl<20) return null;
+  return [(pts[bi][0]+pts[bi+1][0])/2,(pts[bi][1]+pts[bi+1][1])/2,
+          (pts[bi+1][0]-pts[bi][0])/bl,(pts[bi+1][1]-pts[bi][1])/bl];
+}
+
+/* ================= 绘制 ================= */
+function el(tag,at,txt){ var e=document.createElementNS(NS,tag);
+  for(var k in at) e.setAttribute(k,at[k]); if(txt!=null) e.textContent=txt; return e; }
+function ln(g,x1,y1,x2,y2,s,w){ var e=el('line',{x1:x1,y1:y1,x2:x2,y2:y2,stroke:s,
+  'stroke-width':w,'stroke-linecap':'round'}); g.appendChild(e); return e; }
+function circ(g,x,y,r,s,extra){ var o={cx:x,cy:y,r:r,fill:s};
+  for(var k in (extra||{})) o[k]=extra[k];
+  var e=el('circle',o); g.appendChild(e); return e; }
+function ptsStr(p){ return num(p[0])+' '+num(p[1]); }
+function txt(g,x,y,s,o){ o=o||{}; var t=el('text',{x:x,y:y,
+    'text-anchor':o.anchor||'middle','font-size':o.size||12,'font-weight':o.weight||400,
+    fill:o.fill||COL.ink,stroke:'#fff','stroke-width':o.halo==null?4:o.halo,
+    'paint-order':'stroke','stroke-linejoin':'round'},s);
+  if(o.spacing) t.setAttribute('letter-spacing',o.spacing); g.appendChild(t); return t; }
+function faultMark(g,x,y){
+  var p='M'+x+' '+(y-8)+' L'+(x-5.5)+' '+(y+1)+' L'+(x-1)+' '+(y+1)+' L'+x+' '+(y+8)+
+        ' L'+(x+5.5)+' '+(y-1)+' L'+(x+1)+' '+(y-1)+' Z';
+  g.appendChild(el('circle',{cx:x,cy:y,r:13,fill:'#fff',stroke:COL.flt,'stroke-width':2.4}));
+  g.appendChild(el('circle',{cx:x,cy:y,r:17,fill:'none',stroke:COL.flt,'stroke-width':1.4,
+    'stroke-dasharray':'3 3',class:'fltpulse'}));
+  g.appendChild(el('path',{d:p,fill:COL.flt}));
+}
+function isIso(id,tid){ return FAULT&&FAULT.iso&&FAULT.iso.indexOf(id+':'+tid)>=0; }
+function markSwitch(g,x,y,id,tid){
+  var k=id+':'+tid;
+  if(FAULT&&FAULT.reclosed&&FAULT.reclosed.indexOf(k)>=0)
+    circ(g,x,y,14,'none',{stroke:COL.live,'stroke-width':2.2,class:'fltpulse'});
+  else if(FAULT&&FAULT.tripped&&FAULT.tripped.indexOf(k)>=0)
+    circ(g,x,y,14,'none',{stroke:COL.flt,'stroke-width':2.2,class:'fltpulse'});
+  else if(FAULT&&FAULT.restored&&FAULT.restored.indexOf(k)>=0)
+    circ(g,x,y,14,'none',{stroke:COL.live,'stroke-width':2.2,class:'fltpulse'});
+  if(isIso(id,tid)) circ(g,x,y,13,'none',{stroke:COL.flt,'stroke-width':1.6,'stroke-dasharray':'3 3'});
+}
+
+function defs(){
+  var d=el('defs',{});
+  var f=el('filter',{id:'glow',x:'-60%',y:'-60%',width:'220%',height:'220%'});
+  f.appendChild(el('feGaussianBlur',{stdDeviation:'3.6',result:'b'}));
+  var m=el('feMerge',{});
+  m.appendChild(el('feMergeNode',{in:'b'})); m.appendChild(el('feMergeNode',{in:'b'}));
+  m.appendChild(el('feMergeNode',{in:'SourceGraphic'}));
+  f.appendChild(m); d.appendChild(f);
+  var sh=el('filter',{id:'sh',x:'-40%',y:'-40%',width:'180%',height:'180%'});
+  sh.appendChild(el('feDropShadow',{dx:'0',dy:'1.5',stdDeviation:'1.6','flood-color':'#1b3a63','flood-opacity':'.16'}));
+  d.appendChild(sh);
+  var ps=el('pattern',{id:'dots',width:'26',height:'26',patternUnits:'userSpaceOnUse'});
+  ps.appendChild(el('circle',{cx:'1.3',cy:'1.3',r:'1',fill:'#cfdaea'}));
+  d.appendChild(ps);
+  [['ga',COL.a],['gb',COL.b]].forEach(function(g){
+    var lg=el('linearGradient',{id:g[0],x1:'0',y1:'0',x2:'.85',y2:'1'});
+    lg.appendChild(el('stop',{offset:'0','stop-color':g[1],'stop-opacity':'.13'}));
+    lg.appendChild(el('stop',{offset:'1','stop-color':g[1],'stop-opacity':'.04'}));
+    d.appendChild(lg);
+  });
+  return d;
+}
+var MK=[];
+function wrapText(s,size,maxW){
+  var out=[], cur='';
+  for(var i=0;i<s.length;i++){ var c=s.charAt(i);
+    if(textW(cur+c,size)>maxW&&cur){ out.push(cur); cur=c; } else cur+=c; }
+  if(cur) out.push(cur);
+  return out;
+}
+function stepMark(g,x,y,n,col){
+  g.appendChild(el('circle',{cx:x,cy:y,r:11,fill:col,stroke:'#fff','stroke-width':2.2}));
+  g.appendChild(el('text',{x:x,y:y+4,'text-anchor':'middle','font-size':12,'font-weight':700,
+    fill:'#fff'},String(n)));
+}
+/* 图中"空白位置"的动作过程悬浮窗 */
+function actionCard(g){
+  if(!FAULT) return;
+  var rows=[];
+  function add(n,col,title,det,on){ rows.push({n:n,col:col,title:title,det:det,on:on}); }
+  add(1,COL.flt,'保护动作 · t≈0.10 s',
+      FAULT.tripped.length?('跳开 '+FAULT.tripped.map(kname).join('、')+
+        (FAULT.escalate?'（越级跳闸，本站全停）':'')):'无电源开关动作', true);
+  if(FAULT.tr){
+    var rc=!!(FAULT.reclosed&&FAULT.reclosed.length);
+    add(2,COL.live,'重合闸成功 · t≈0.60 s',
+        rc?('合上 '+FAULT.reclosed.map(kname).join('、')+'，瞬时性故障消失'):'待执行', rc);
+    add(3,COL.live,'供电恢复正常 · t≈0.60 s',
+        rc?'无需隔离与转供，线路继续正常运行':'待执行', rc);
+  } else {
+    add(2,COL.tie,'故障隔离 · t≈0.35 s',
+        FAULT.iso.length?('拉开 '+FAULT.iso.map(kname).join('、')+
+          (FAULT.rf?('；'+kname(FAULT.rf)+' 拒动'):'')):'待执行', !!FAULT.iso.length);
+    add(3,COL.live,'转供恢复 · t≈1.20 s',
+        FAULT.restored.length?('合上 '+FAULT.restored.map(kname).join('、')):
+          (FAULT.rf?'转供被闭锁（故障未完全隔离）':'待执行'), !!FAULT.restored.length);
+  }
+  var W=284, x0=60, y0=80, inner=W-76, hh=46;
+  var lay=rows.map(function(r){ var L=wrapText(r.det,10.5,inner);
+    var h=19+L.length*13+9; hh+=h; return {r:r,L:L,h:h}; });
+  hh+=30;
+  g.appendChild(el('rect',{x:x0,y:y0,width:W,height:hh,rx:11,fill:'#fff',opacity:.97,
+    stroke:'#d7dfe9','stroke-width':1.2,filter:'url(#sh)'}));
+  g.appendChild(el('rect',{x:x0,y:y0,width:4,height:hh,rx:2,fill:'#1d4ed8'}));
+  txt(g,x0+16,y0+24,'动作过程',{size:13,weight:700,anchor:'start',halo:0});
+  txt(g,x0+W-14,y0+24,'故障：'+FAULT.label,{size:10.5,weight:600,anchor:'end',fill:COL.muted,halo:0});
+  g.appendChild(el('line',{x1:x0+16,y1:y0+33,x2:x0+W-14,y2:y0+33,stroke:'#eef1f6'}));
+  var yy=y0+46;
+  lay.forEach(function(o,i){
+    if(o.r.on) g.appendChild(el('rect',{x:x0+9,y:yy-3,width:W-18,height:o.h-4,rx:7,
+      fill:o.r.col,opacity:.06}));
+    stepMark(g,x0+25,yy+8,o.r.n,o.r.on?o.r.col:'#c3cdda');
+    txt(g,x0+42,yy+12,o.r.title,{size:11.5,weight:700,anchor:'start',
+      fill:o.r.on?o.r.col:COL.muted,halo:0});
+    o.L.forEach(function(t,k){
+      txt(g,x0+42,yy+27+k*13,t,{size:10.5,anchor:'start',fill:o.r.on?COL.ink:COL.muted,halo:0});
+    });
+    yy+=o.h;
+  });
+  g.appendChild(el('line',{x1:x0+16,y1:yy-4,x2:x0+W-14,y2:yy-4,stroke:'#eef1f6'}));
+  var dl=deadLoads();
+  txt(g,x0+16,yy+15,'当前失电配电房 '+dl+' 个'+(dl?'':'（全部恢复）'),
+    {size:11,weight:700,anchor:'start',fill:dl?'#d6336c':COL.live,halo:0});
+}
+function textW(s,size){ var w=0;
+  for(var i=0;i<s.length;i++) w+=(s.charCodeAt(i)>255?size:size*0.56);
+  return w; }
+function badge(g,cx,cy,title,sub,color){
+  var w=Math.max(textW(title,18),textW(sub,10.5))+46, h=52;
+  g.appendChild(el('rect',{x:cx-w/2,y:cy-h/2-2,width:w,height:h,rx:h/2,fill:'#fff',
+    stroke:color,'stroke-width':1.3,'stroke-opacity':.45,filter:'url(#sh)'}));
+  g.appendChild(el('circle',{cx:cx-w/2+17,cy:cy+4,r:4.5,fill:color}));
+  txt(g,cx+9,cy-3,title,{size:18,weight:700,fill:color,halo:0});
+  txt(g,cx+9,cy+15,sub,{size:10.5,weight:600,fill:'#5b7083',halo:0});
+}
+function devDown(id,ev){
+  if(ev.target.__term) return;
+  var d=DEV[id]; if(!d) return;
+  ev.stopPropagation(); hideCtx(); SEL={kind:'dev',id:id};
+  var w=toWorld(ev); push();
+  drag={kind:'dev',id:id,dx:w[0]-d.x,dy:w[1]-d.y};
+  paint();
+}
+function devCtx(id,ev){
+  var d=DEV[id]; if(!d) return;
+  ev.preventDefault(); ev.stopPropagation(); hideCtx();
+  CTXDEV=id; CTXWIRE=null; SEL={kind:'dev',id:id}; paint();
+  var items=[];
+  if(d.type==='sta') items.push({a:'flip',t:'翻转图元（进/出线互换朝向）'});
+  else items=[{a:'rotcw',t:'顺时针旋转 15°'},{a:'rotccw',t:'逆时针旋转 15°'},{a:'rot0',t:'角度归零'}];
+  if(d.type==='sta') items.push({a:'closesw',t:'本站开关全部合闸'},{a:'opensw',t:'本站开关全部分闸'});
+  items.push({a:'fault',t:'★ 设为故障点'},{a:'rename',t:'重命名…'},{a:'del',t:'删除图元',cls:'danger'});
+  openCtx(ev.clientX,ev.clientY,items,d.name);
+}
+function render(){
+  while(SVG.firstChild) SVG.removeChild(SVG.firstChild);
+  MK=[];
+  var P=petals();
+  SVG.appendChild(defs());
+  SVG.appendChild(el('rect',{x:50,y:60,width:1500,height:780,fill:'#fdfeff'}));
+  SVG.appendChild(el('rect',{x:50,y:60,width:1500,height:780,fill:'url(#dots)',opacity:'.55'}));
+  SVG.appendChild(el('path',{d:'M '+ptsStr(P.top1.p0)+' C '+ptsStr(P.top1.p1)+' '+ptsStr(P.top1.p2)+' '+ptsStr(P.top1.p3)+
+    ' L '+ptsStr(P.bot1.p0)+' C '+ptsStr(P.bot1.p1)+' '+ptsStr(P.bot1.p2)+' '+ptsStr(P.bot1.p3)+' Z',
+    fill:'url(#ga)',stroke:COL.a,'stroke-width':1.6,'stroke-opacity':.42}));
+  SVG.appendChild(el('path',{d:'M '+ptsStr(P.top2.p0)+' C '+ptsStr(P.top2.p1)+' '+ptsStr(P.top2.p2)+' '+ptsStr(P.top2.p3)+
+    ' L '+ptsStr(P.bot2.p0)+' C '+ptsStr(P.bot2.p1)+' '+ptsStr(P.bot2.p2)+' '+ptsStr(P.bot2.p3)+' Z',
+    fill:'url(#gb)',stroke:COL.b,'stroke-width':1.6,'stroke-dasharray':'9 7','stroke-opacity':.42}));
+
+  var gG=el('g',{}), gW=el('g',{}), gF=el('g',{}), gD=el('g',{}), gL=el('g',{});
+
+  WIRES.forEach(function(w){
+    var g0=wpath(w); if(!g0) return;
+    var tA=T(w.a.d,w.a.t), tB=T(w.b.d,w.b.t);
+    var live=EN[w.a.d+':'+w.a.t]||EN[w.b.d+':'+w.b.t];
+    var isTie=(tA.tie||tB.tie);
+    var isFlt=(FAULT&&FAULT.kind==='wire'&&FAULT.id===w.id);
+    var pet=(DEV[w.a.d].pet==='b')?'b':'a';
+    var col=isFlt?COL.flt:(isTie?COL.tie:(live?(pet==='b'?COL.b:COL.a):COL.dead));
+    var isTrunk=(DEV[w.a.d].type!=='ld'&&DEV[w.b.d].type!=='ld');
+    if(live&&isTrunk) gG.appendChild(el('path',{d:g0.d,fill:'none',stroke:col,'stroke-width':3.2,
+      opacity:isFlt?.7:.42,filter:'url(#glow)','pointer-events':'none',
+      'stroke-linecap':'round','stroke-linejoin':'round'}));
+    var hit=el('path',{d:g0.d,fill:'none',stroke:'transparent','stroke-width':14});
+    hit.style.cursor='move';
+    hit.addEventListener('contextmenu',function(ev){ ev.preventDefault(); ev.stopPropagation();
+      hideCtx(); CTXDEV=null; CTXWIRE=w.id;
+      openCtx(ev.clientX,ev.clientY,[{a:'bias0',t:'复位走线'},{a:'fault',t:'设为故障点'},
+        {a:'del',t:'删除这条电缆',cls:'danger'}],'电缆 '+(isTie?'（联络）':'')); });
+    hit.addEventListener('mousedown',function(ev){ ev.stopPropagation(); hideCtx();
+      SEL={kind:'wire',id:w.id};
+      var wp=toWorld(ev); push();
+      drag={kind:'wire',id:w.id,sx:wp[0],sy:wp[1],
+            ox:(w.bias||[0,0])[0],oy:(w.bias||[0,0])[1]};
+      paint(); });
+    gW.appendChild(hit);
+    var at={d:g0.d,fill:'none',stroke:col,'stroke-width':(live||isFlt)?2.3:2,'stroke-linecap':'round',
+      'stroke-linejoin':'round','pointer-events':'none'};
+    if(isTie) at['stroke-dasharray']='9 5';
+    if(isFlt) at['stroke-dasharray']='7 4';
+    gW.appendChild(el('path',at));
+    var fd=FLOW.dir?FLOW.dir[w.id]:0;
+    if(live&&fd&&!isTie&&!isFlt){
+      gF.appendChild(el('path',{d:g0.d,fill:'none',stroke:'#fff','stroke-width':2.2,
+        opacity:.95,'pointer-events':'none',class:'flow'+(fd<0?' rev':'')}));
+      var tri=flowArrow(g0.pts,fd);
+      if(tri) gF.appendChild(el('path',{d:'M'+ptsStr(tri[0])+' L'+ptsStr(tri[1])+' L'+ptsStr(tri[2])+' Z',
+        fill:COL.cur,'pointer-events':'none'}));
+    }
+    if(isFlt){ var m=longestMid(g0.pts); if(m) faultMark(gL,m[0],m[1]); }
+  });
+
+  if(PREV){
+    var f=drag&&drag.from?T(drag.from.d,drag.from.t):null;
+    if(f){ var dd=DEV[drag.from.d], q=tp(dd,f), dv=dirW(dd,f);
+      var rr=route(q,dv,[PREV[0],PREV[1]],[-dv[0],-dv[1]],[0,0]);
+      gF.appendChild(el('path',{d:rr.d,fill:'none',stroke:COL.tie,'stroke-width':1.6,
+        'stroke-dasharray':'5 5','pointer-events':'none'})); }
+  }
+
+  ORDER.forEach(function(id){
+    var d=DEV[id], g=el('g',{transform:'translate('+d.x+','+d.y+') rotate('+d.rot+')'+(d.flip?' scale(1,-1)':'')});
+    g.dataset.dev=id; g.style.cursor='move';
+
+    if(d.type==='sta'){
+      var busLive=EN[id+':bus'], k=SZ;
+      g.appendChild(el('rect',{x:-52*k,y:-26*k,width:104*k,height:52*k,rx:6,fill:'#fff',opacity:.85}));
+      ln(g,-44*k,0,44*k,0, busLive?d.color:COL.dead, 4);
+      d.terms.forEach(function(t){
+        var live=EN[id+':'+t.id], col=(t.tie?COL.tie:(live?d.color:COL.dead));
+        var up=t.ty<0, bx=t.bx*k, by=t.by*k, X=t.tx*k, Y=t.ty*k;
+        var mx=bx, my=by+(up?-18*k:18*k), s=8*k, swW=8*k, swH=16*k;
+        ln(g,bx,by, mx, my+(up?s:-s), col, 2);
+        ln(g,mx,my+(up?-s:s), X,Y, col, 2);
+        if(t.sw) g.appendChild(el('rect',{x:mx-swW/2,y:my-swH/2,width:swW,height:swH,rx:1.4,
+          fill:'#fff',stroke:col,'stroke-width':1.6}));
+        else g.appendChild(el('rect',{x:mx-swW/2,y:my-swH/2,width:swW,height:swH,rx:1.4,
+          fill:'#fff',stroke:COL.open,'stroke-width':1.6,
+          transform:'rotate(-32 '+mx+' '+my+')'}));
+        var hit=el('rect',{x:mx-10,y:my-13,width:20,height:26,fill:'transparent'});
+        hit.style.cursor='pointer';
+        hit.addEventListener('mousedown',function(ev){ ev.stopPropagation(); hideCtx(); toggle(id,t.id); });
+        g.appendChild(hit);
+        markSwitch(g,mx,my,id,t.id);
+        if(FAULT) MK.push([id,t.id,mx,my]);
+        var tc=circ(g,X,Y,3,col); hitTerm(g,tc,id,t.id);
+      });
+    } else if(d.type==='sub'){
+      var pcol=(d.pet==='b')?COL.b:COL.a;
+      g.appendChild(el('rect',{x:-70,y:-70,width:140,height:140,rx:6,
+        fill:'#f4f7fb',stroke:COL.sub,'stroke-width':2.4}));
+      ln(g,0,-54,0,54, EN[id+':bus']?COL.sub:COL.dead, 7);
+      circ(g,0,-54,5, EN[id+':bus']?COL.sub:COL.dead);
+      d.terms.forEach(function(t){
+        var live=EN[id+':'+t.id], col=live?pcol:COL.dead;
+        var sgn=t.tx>0?1:-1, mx=sgn*54;
+        ln(g,t.bx,t.by,mx-sgn*8,t.ty,col,2);
+        ln(g,mx+sgn*8,t.ty,t.tx,t.ty,col,2);
+        if(t.sw) g.appendChild(el('rect',{x:mx-8,y:t.ty-4,width:16,height:8,rx:1.4,
+          fill:'#fff',stroke:col,'stroke-width':1.6}));
+        else g.appendChild(el('rect',{x:mx-8,y:t.ty-4,width:16,height:8,rx:1.4,
+          fill:'#fff',stroke:COL.open,'stroke-width':1.6,
+          transform:'rotate(-32 '+mx+' '+t.ty+')'}));
+        var hit=el('rect',{x:mx-14,y:t.ty-12,width:28,height:24,fill:'transparent'});
+        hit.style.cursor='pointer';
+        hit.addEventListener('mousedown',function(ev){ ev.stopPropagation(); hideCtx(); toggle(id,t.id); });
+        g.appendChild(hit);
+        markSwitch(g,mx,t.ty,id,t.id);
+        if(FAULT) MK.push([id,t.id,mx,t.ty]);
+        var tc=circ(g,t.tx,t.ty,3,col); hitTerm(g,tc,id,t.id);
+      });
+    } else {
+      var lv=EN[id+':bus'], pc=(d.pet==='b')?COL.b:COL.a, lk=SZ;
+      ln(g,0,-16*lk,0,0,lv?pc:COL.dead,2);
+      g.appendChild(el('path',{d:'M '+(-10*lk)+' 0 L '+(10*lk)+' 0 L 0 '+(16*lk)+' Z',
+        fill:lv?((d.pet==='b')?COL.bLite:COL.aLite):'#eef2f7',
+        stroke:lv?pc:COL.dead,'stroke-width':1.6}));
+      var tv=circ(g,0,-16*lk,3.2,lv?pc:COL.dead); hitTerm(g,tv,id,'t');
+    }
+    g.addEventListener('mousedown',function(ev){ devDown(id,ev); });
+    g.addEventListener('contextmenu',function(ev){ devCtx(id,ev); });
+    gD.appendChild(g);
+  });
+
+  if(FAULT&&FAULT.kind==='dev'&&DEV[FAULT.id]) faultMark(gL,DEV[FAULT.id].x,DEV[FAULT.id].y);
+
+  ORDER.forEach(function(id){
+    var d=DEV[id];
+    if(d.type==='sta'){
+      var ly=d.y+(d.flip?(34*SZ+13):-(34*SZ+13));
+      var lt=txt(gL,d.x,ly,d.name,{size:11.5,weight:700,fill:EN[id+':bus']?d.color:COL.muted});
+      lt.style.cursor='move';
+      lt.addEventListener('mousedown',function(ev){ devDown(id,ev); });
+      lt.addEventListener('contextmenu',function(ev){ devCtx(id,ev); });
+    }
+    if(d.type==='sub'){
+      txt(gL,d.x,d.y-96,d.name,{size:15,weight:700,fill:COL.sub,spacing:2});
+      txt(gL,d.x,d.y-78,'10 kV 母线（电源）',{size:10.5,fill:COL.muted});
+    }
+  });
+  badge(gL,550,442,'花瓣 Ⅰ','甲站供电 · 4 站 8 房 · 开环点 A3',COL.a);
+  badge(gL,1050,442,'花瓣 Ⅱ','乙站供电 · 4 站 8 房 · 开环点 B3',COL.b);
+  var tieW=WIRES.filter(function(w){ var a=T(w.a.d,w.a.t), b=T(w.b.d,w.b.t);
+    return (a&&a.tie)||(b&&b.tie); })[0];
+  if(tieW){ var gtw=wpath(tieW), tm=gtw&&longestMid(gtw.pts);
+    if(tm) txt(gL,tm[0],tm[1]-16,'联络开关（常开）',{size:11.5,weight:700,fill:COL.tie}); }
+
+  actionCard(gL);
+  if(FAULT) MK.forEach(function(m){
+    var k=m[0]+':'+m[1], n=0, col='#c3cdda';
+    if(FAULT.reclosed&&FAULT.reclosed.indexOf(k)>=0){ n=2; col=COL.live; }
+    else if(FAULT.restored.indexOf(k)>=0){ n=3; col=COL.live; }
+    else if(FAULT.iso.indexOf(k)>=0){ n=2; col=COL.tie; }
+    else if(FAULT.tripped.indexOf(k)>=0){ n=1; col=COL.flt; }
+    if(!n) return;
+    var p=xf(DEV[m[0]],m[2],m[3]);
+    stepMark(gL,p[0]+15,p[1]-15,n,col);
+  });
+
+  SVG.appendChild(gG); SVG.appendChild(gW); SVG.appendChild(gF); SVG.appendChild(gD); SVG.appendChild(gL);
+}
+function flowArrow(pts,sign){
+  var m=longestMid(pts); if(!m) return null;
+  var u=[m[2],m[3]];
+  if(sign<0) u=[-u[0],-u[1]];
+  var px=-u[1],py=u[0],L=7.5,x=m[0],y=m[1];
+  return [[x+u[0]*L,y+u[1]*L],[x-u[0]*L*0.85+px*4.6,y-u[1]*L*0.85+py*4.6],
+          [x-u[0]*L*0.85-px*4.6,y-u[1]*L*0.85-py*4.6]];
+}
+
+function hitTerm(g,node,id,tid){
+  node.__term=true; node.style.cursor='crosshair';
+  node.addEventListener('mousedown',function(ev){
+    ev.stopPropagation(); hideCtx(); drag={kind:'link',from:{d:id,t:tid}}; PREV=null;
+    SEL={kind:'term',id:id+':'+tid}; paint();
+  });
+  node.addEventListener('mouseup',function(ev){
+    ev.stopPropagation();
+    if(drag&&drag.kind==='link'){
+      var f=drag.from;
+      if(!(f.d===id&&f.t===tid)){ push(); wire([f.d,f.t],[id,tid]); }
+      drag=null; PREV=null; paint();
+    }
+  });
+}
+
+/* ================= 交互 ================= */
+/* 画布按 preserveAspectRatio 等比居中，这里换算出用户坐标（含 viewBox 原点偏移） */
+function toWorld(ev){
+  var r=SVG.getBoundingClientRect();
+  var k=Math.min(r.width/1500,r.height/780)||1;
+  var ox=r.left+(r.width-1500*k)/2, oy=r.top+(r.height-780*k)/2;
+  return [50+(ev.clientX-ox)/k, 60+(ev.clientY-oy)/k];
+}
+SVG.addEventListener('mousemove',function(ev){
+  if(!drag) return;
+  var w=toWorld(ev), wx=w[0], wy=w[1];
+  if(drag.kind==='dev'){
+    var d=DEV[drag.id];
+    d.x=Math.round((wx-drag.dx)/5)*5; d.y=Math.round((wy-drag.dy)/5)*5;
+    refresh();
+  } else if(drag.kind==='link'){ PREV=[wx,wy]; refresh(); }
+  else if(drag.kind==='wire'){
+    var w=findWire(drag.id); if(!w) return;
+    w.bias=[Math.round((drag.ox+wx-drag.sx)/5)*5, Math.round((drag.oy+wy-drag.sy)/5)*5];
+    refresh();
+  }
+});
+window.addEventListener('mouseup',function(){ if(drag&&drag.kind==='link'){ drag=null; PREV=null; refresh(); } else drag=null; });
+SVG.addEventListener('mousedown',function(ev){ if(ev.target===SVG){ hideCtx(); SEL=null; paint(); } });
+
+function toggle(id,tid){ var t=findTermObj(id,tid); if(!t) return; push(); t.sw=!t.sw; paint(); }
+function delWire(wid){ push();
+  for(var i=WIRES.length-1;i>=0;i--) if(WIRES[i].id===wid) WIRES.splice(i,1);
+  if(SEL&&SEL.kind==='wire'&&SEL.id===wid) SEL=null;
+  if(FAULT&&FAULT.kind==='wire'&&FAULT.id===wid) FAULT=null; paint(); }
+function delDev(id){ push();
+  for(var i=WIRES.length-1;i>=0;i--) if(WIRES[i].a.d===id||WIRES[i].b.d===id) WIRES.splice(i,1);
+  delete DEV[id];
+  for(var j=ORDER.length-1;j>=0;j--) if(ORDER[j]===id) ORDER.splice(j,1);
+  if(FAULT&&FAULT.kind==='dev'&&FAULT.id===id) FAULT=null;
+  SEL=null; paint(); }
+function push(){ UNDO.push(JSON.stringify(snap())); if(UNDO.length>80) UNDO.shift(); }
+function snap(){ return {DEV:ORDER.map(function(id){ var d=DEV[id];
+    return {id:d.id,type:d.type,name:d.name,x:d.x,y:d.y,rot:d.rot,flip:!!d.flip,flip0:!!d.flip0,
+      color:d.color,pet:d.pet,host:d.host,hterm:d.hterm,
+      terms:d.terms.map(function(t){ return {id:t.id,n:t.n,k:t.k,bx:t.bx,by:t.by,
+        tx:t.tx,ty:t.ty,sw:t.sw,tie:!!t.tie,dir:t.dir}; })};}),
+    WIRES:WIRES.map(function(w){ return {a:w.a,b:w.b,bias:w.bias||[0,0]}; }) }; }
+function load(s){ clearArr(ORDER); clearArr(WIRES); SEQ=0;
+  for(var _k in DEV) delete DEV[_k];
+  s.DEV.forEach(function(d){ var o=JSON.parse(JSON.stringify(d));
+    o.terms.forEach(function(t){ if(!t.dir) t.dir=[0,1]; }); addDev(o); });
+  (s.WIRES||[]).forEach(function(w){ WIRES.push({id:'w'+(++SEQ),a:w.a,b:w.b,bias:w.bias||[0,0]}); });
+  SRC=['SUBA','SUBB']; SEL=null; UNDO=[]; FAULT=null; DEADSRC={}; paint(); }
+
+document.getElementById('bAllClose').onclick=function(){ push();
+  ORDER.forEach(function(id){ DEV[id].terms.forEach(function(t){ t.sw=true; }); }); paint(); };
+document.getElementById('bAllOpen').onclick=function(){ push();
+  ORDER.forEach(function(id){ DEV[id].terms.forEach(function(t){ t.sw=false; }); }); paint(); };
+document.getElementById('bReset').onclick=function(){ UNDO=[]; build(); paint(); };
+document.getElementById('bUndo').onclick=function(){ var s=UNDO.pop(); if(s) load(JSON.parse(s)); };
+document.getElementById('bExport').onclick=function(){
+  var b=new Blob([JSON.stringify(snap(),null,1)],{type:'application/json'});
+  var a=document.createElement('a'); a.href=URL.createObjectURL(b);
+  a.download='双花瓣-拓扑.json'; a.click(); };
+document.getElementById('bImport').onclick=function(){ document.getElementById('fImport').click(); };
+var OUT=true, bOut=document.getElementById('bOut');
+bOut.onclick=function(){ OUT=!OUT;
+  bOut.textContent='出线朝外 '+(OUT?'✓':'✗'); bOut.className=OUT?'primary':'';
+  push();
+  ORDER.forEach(function(id){ var d=DEV[id]; if(d.type==='sta') d.flip=OUT?(d.flip0?1:0):0; });
+  placeLoads(); paint(); };
+var rSz=document.getElementById('rSz'), lSz=document.getElementById('lSz');
+rSz.oninput=function(){ SZ=+rSz.value/100; lSz.textContent=rSz.value+'%'; placeLoads(); refresh(); };
+document.getElementById('fImport').onchange=function(e){
+  var f=e.target.files[0]; if(!f) return; var r=new FileReader();
+  r.onload=function(){ try{ load(JSON.parse(r.result)); }catch(err){ alert('JSON 解析失败'); } };
+  r.readAsText(f); e.target.value=''; };
+document.addEventListener('keydown',function(e){
+  if(e.key==='Delete'&&SEL&&SEL.kind==='wire') delWire(SEL.id);
+  if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='z'){ var s=UNDO.pop(); if(s) load(JSON.parse(s)); }
+  if(e.key==='Escape') hideCtx();
+});
+
+/* ================= 右键菜单 ================= */
+var CTX=document.getElementById('ctx'), CTXDEV=null, CTXWIRE=null;
+function openCtx(x,y,items,title){
+  var h='<div class="hd">'+title+'</div>';
+  items.forEach(function(it){ h+='<button data-a="'+it.a+'"'+(it.cls?' class="'+it.cls+'"':'')+'>'+it.t+'</button>'; });
+  CTX.innerHTML=h; CTX.style.display='block';
+  var w=CTX.offsetWidth||180, hh=CTX.offsetHeight||200;
+  CTX.style.left=Math.max(6,Math.min(x,window.innerWidth-w-8))+'px';
+  CTX.style.top=Math.max(6,Math.min(y,window.innerHeight-hh-8))+'px';
+}
+function hideCtx(){ CTX.style.display='none'; }
+CTX.addEventListener('click',function(ev){
+  var b=ev.target.closest?ev.target.closest('button[data-a]'):null; if(!b) return;
+  var a=b.dataset.a; hideCtx(); ctxAct(a);
+});
+document.addEventListener('mousedown',function(ev){ if(!CTX.contains(ev.target)) hideCtx(); });
+function ctxAct(a){
+  if(CTXDEV!=null){ var d=DEV[CTXDEV]; if(!d) return;
+    if(a==='flip'){ push(); d.flip=d.flip?0:1; placeLoads(); paint(); }
+    else if(a==='rotcw'){ push(); d.rot+=15; paint(); }
+    else if(a==='rotccw'){ push(); d.rot-=15; paint(); }
+    else if(a==='rot0'){ push(); d.rot=0; paint(); }
+    else if(a==='closesw'){ push(); d.terms.forEach(function(t){ t.sw=true; }); paint(); }
+    else if(a==='opensw'){ push(); d.terms.forEach(function(t){ t.sw=false; }); paint(); }
+    else if(a==='fault'){ SEL={kind:'dev',id:d.id}; setFault(); }
+    else if(a==='rename'){ var n=prompt('图元名称',d.name); if(n){ push(); d.name=n; paint(); } }
+    else if(a==='del') delDev(d.id);
+  } else if(CTXWIRE!=null){ var w=findWire(CTXWIRE); if(!w) return;
+    if(a==='bias0'){ push(); w.bias=[0,0]; paint(); }
+    else if(a==='fault'){ SEL={kind:'wire',id:w.id}; setFault(); }
+    else if(a==='del') delWire(w.id);
+  }
+}
+
+/* ================= 故障演练 ================= */
+function fmsg(s){ document.getElementById('faultMsg').textContent=s; }
+function kd(k){ var q=k.split(':'); return {d:q[0],t:q[1]}; }
+function kname(k){ var q=kd(k), t=findTermObj(q.d,q.t); return q.d+'·'+(t?t.n:''); }
+function hops(fromKey,toKey){
+  var adj={};
+  function add(a,b){ (adj[a]=adj[a]||[]).push(b); }
+  ORDER.forEach(function(id){ var d=DEV[id];
+    d.terms.forEach(function(t){ if(!t.sw) return; var k=id+':'+t.id;
+      add(k,id+':bus'); add(id+':bus',k); }); });
+  WIRES.forEach(function(w){ var a=w.a.d+':'+w.a.t, b=w.b.d+':'+w.b.t; add(a,b); add(b,a); });
+  var seen={}, q=[[fromKey,0]]; seen[fromKey]=1;
+  for(var i=0;i<q.length;i++){ var u=q[i];
+    if(u[0]===toKey) return u[1];
+    (adj[u[0]]||[]).forEach(function(v){ if(!seen[v]){ seen[v]=1; q.push([v,u[1]+1]); } }); }
+  return Infinity;
+}
+function otherEndOfWire(key){
+  for(var i=0;i<WIRES.length;i++){ var w=WIRES[i], a=w.a.d+':'+w.a.t, b=w.b.d+':'+w.b.t;
+    if(a===key) return b; if(b===key) return a; }
+  return null;
+}
+/* 与故障元件仍保持电气连通的节点集合（用于"故障区间不得带电"闭锁） */
+function zoneKeys(){
+  var adj={};
+  function add(a,b){ (adj[a]=adj[a]||[]).push(b); }
+  ORDER.forEach(function(id){ var d=DEV[id];
+    d.terms.forEach(function(t){ if(!t.sw) return; var k=id+':'+t.id;
+      add(k,id+':bus'); add(id+':bus',k); }); });
+  WIRES.forEach(function(w){ var a=w.a.d+':'+w.a.t, b=w.b.d+':'+w.b.t; add(a,b); add(b,a); });
+  var seed=[];
+  if(FAULT.kind==='wire'){ var w=findWire(FAULT.id);
+    if(w) seed=[w.a.d+':'+w.a.t, w.b.d+':'+w.b.t]; }
+  else seed=[FAULT.id+':bus'];
+  var seen={}, q=[]; seed.forEach(function(k){ if(!seen[k]){ seen[k]=1; q.push(k); } });
+  for(var i=0;i<q.length;i++){ var u=q[i];
+    (adj[u]||[]).forEach(function(v){ if(!seen[v]){ seen[v]=1; q.push(v); } }); }
+  return q;
+}
+function zoneLive(){
+  for(var i=0;i<FAULT.zone.length;i++){ var k=FAULT.zone[i];
+    if(k===SRC[0]+':bus'||k===SRC[1]+':bus') continue;   /* 电源母线是"源"，不作为带电判据 */
+    if(EN[k]) return true; }
+  return false;
+}
+
+/* ① 故障发生：保护只动作于"故障侧"电源，按电气距离取最近的一台 */
+function setFault(){
+  if(!SEL){ fmsg('请先点选一条电缆或一座开关站，再点“① 模拟故障”。'); return; }
+  var probes=[], label='';
+  if(SEL.kind==='wire'){
+    var w=findWire(SEL.id); if(!w) return;
+    probes=[w.a.d+':'+w.a.t, w.b.d+':'+w.b.t]; label='电缆故障';
+  } else if(SEL.kind==='dev'){
+    var d=DEV[SEL.id]; if(!d) return;
+    probes=[d.id+':bus']; label=d.name+' 故障';
+    if(d.type==='sub') DEADSRC[d.id]=true;      /* 变电站母线故障 → 该母线失电 */
+  } else { fmsg('请先点选一条电缆或一座开关站。'); return; }
+  FAULT={kind:SEL.kind,id:SEL.id,label:label,tripped:[],iso:[],restored:[],zone:[],msg:'',
+         rf:SCENE_RF||null,tr:SCENE_TR,pre:JSON.stringify(snap())};
+  var srcs=[];
+  ['SUBA','SUBB'].forEach(function(s){ DEV[s].terms.forEach(function(t){
+    if(t.sw) srcs.push(s+':'+t.id); }); });
+  var best=Infinity, goal=probes[0];
+  probes.forEach(function(pb){ srcs.forEach(function(sk){
+    var h=hops(sk,pb); if(h<best){ best=h; goal=pb; } }); });
+  var act=[];
+  srcs.forEach(function(sk){ if(hops(sk,goal)===best) act.push(sk); });
+  act.forEach(function(sk){ var q=kd(sk), t=findTermObj(q.d,q.t);
+    if(t) t.sw=false; FAULT.tripped.push(sk); });
+  /* 保护拒动 → 越级跳闸：跳开该电源站的全部出线 */
+  var esc='';
+  if(FAULT.rf&&act.indexOf(FAULT.rf)>=0){
+    var sd=kd(FAULT.rf).d;
+    FAULT.tripped=[]; FAULT.escalate=sd; DEADSRC[sd]=true;   /* 越级跳闸 → 该站全停 */
+    DEV[sd].terms.forEach(function(t){ var k=sd+':'+t.id;
+      if(k===FAULT.rf) return;                       /* 拒动开关保持合位 */
+      if(t.sw){ t.sw=false; FAULT.tripped.push(k); } });
+    esc=kname(FAULT.rf)+' 开关拒动 → 越级跳开本站全部出线，'+DEV[sd].name+'全停';
+  }
+  var names=FAULT.tripped.map(kname);
+  FAULT.msg='① 保护动作：'+(esc?esc:('跳开 '+names.join('、')))+'，故障区间失电';
+  push(); paint();
+}
+/* 瞬时性故障：重合闸成功 */
+function reclose(){
+  if(!FAULT) return;
+  FAULT.reclosed=[];
+  FAULT.tripped.forEach(function(k){ var q=kd(k), t=findTermObj(q.d,q.t);
+    if(t&&!t.sw){ t.sw=true; FAULT.reclosed.push(k); } });
+  simulate();
+  FAULT.msg='② 重合闸成功：故障为瞬时性，自动重合后供电恢复，无需隔离与转供';
+  push(); paint();
+}
+function transientEnd(){
+  if(!FAULT) return;
+  FAULT.msg='③ 供电恢复正常：瞬时性故障已消失，停电时间约 0.6 s，线路继续正常运行';
+  paint();
+}
+/* ② 故障隔离：拉开故障区间两侧开关；开关拒动则该侧无法隔离 */
+function doIso(){
+  if(!FAULT){ fmsg('还没有故障点，请先点“① 模拟故障”。'); return; }
+  FAULT.iso=[]; var names=[], ref=[];
+  function openOne(dk,tk){
+    var t=findTermObj(dk,tk); if(!t) return;
+    var key=dk+':'+tk;
+    if(FAULT.rf===key){ ref.push(key); return; }
+    FAULT.iso.push(key); names.push(kname(key)); if(t.sw) t.sw=false;
+  }
+  if(FAULT.kind==='wire'){
+    var w=findWire(FAULT.id); if(!w) return;
+    openOne(w.a.d,w.a.t); openOne(w.b.d,w.b.t);
+  } else {
+    var d=DEV[FAULT.id]; d.terms.forEach(function(t){ openOne(d.id,t.id); });
+  }
+  var note='';
+  if(ref.length){
+    var up=otherEndOfWire(ref[0]);
+    if(up&&FAULT.iso.indexOf(up)<0){ var q=kd(up), t2=findTermObj(q.d,q.t);
+      if(t2){ t2.sw=false; FAULT.iso.push(up); names.push(kname(up)+'（越级）'); } }
+    note='；'+ref.map(kname).join('、')+' 拒动，该侧无法隔离，故障区间扩大到该站';
+  }
+  FAULT.zone=zoneKeys();
+  FAULT.msg='② 故障隔离：拉开 '+names.join('、')+note+'，故障区间已与系统解列';
+  push(); paint();
+}
+/* ③ 转供：在"不并列、不向故障区间送电"的前提下最大化复电 */
+function doRestore(){
+  if(!FAULT){ fmsg('还没有故障点，请先点“① 模拟故障”。'); return; }
+  if(!FAULT.iso.length){ fmsg('请先执行“② 隔离故障区间”，否则合闸会重新送上故障。'); return; }
+  simulate();
+  FAULT.zone=zoneKeys();
+  var before=deadLoads();
+  FAULT.restored=[];
+  for(var round=0;round<30;round++){
+    simulate();
+    var base=liveLoads(), best=null, bestGain=0, bestCost=9;
+    var zl=zoneLive();
+    ORDER.forEach(function(id){
+      var d=DEV[id];
+      d.terms.forEach(function(t){
+        if(t.sw) return;
+        if(FAULT.iso.indexOf(id+':'+t.id)>=0) return;
+        t.sw=true; simulate();
+        var ok=!SIM.paired && !zl && !zoneLive();
+        var gain=liveLoads()-base;
+        t.sw=false;
+        var cost=(id==='SUBA'||id==='SUBB')?0:1;
+        if(ok&&(gain>bestGain||(gain===bestGain&&gain>0&&cost<bestCost))){
+          bestGain=gain; bestCost=cost; best=[id,t.id]; }
+      });
+    });
+    if(!best) break;
+    var bt=findTermObj(best[0],best[1]); bt.sw=true;
+    FAULT.restored.push(best[0]+':'+best[1]);
+  }
+  simulate();
+  var names=FAULT.restored.map(kname);
+  var now=deadLoads(), back=before-now;
+  if(!names.length&&now){
+    FAULT.why = FAULT.rf ? ('故障区间未完全隔离（'+kname(FAULT.rf)+' 拒动），带故障转供被闭锁，须人工隔离后再送电')
+      : (FAULT.kind==='dev' ? '电源侧母线故障，本站不具备转供条件' : '无可用备用通道，转供容量不足');
+  } else FAULT.why='';
+  var hold=[];
+  ORDER.forEach(function(id){ if(DEV[id].type==='ld'&&!EN[id+':t']) hold.push(DEV[id].name); });
+  FAULT.msg='③ 转供恢复：'+(names.length?('合上 '+names.join('、')):'无需合闸')+'，恢复 '+back+' 个配电房'+
+    (now?('；仍有 '+now+' 个未复电（'+hold.slice(0,3).join('、')+(hold.length>3?' 等':'')+
+      (FAULT.why?('）——'+FAULT.why):'，位于故障区间或母线，须待修复）')):'；非故障段已全部恢复供电');
+  push(); paint();
+}
+function clearFault(){
+  var pre=FAULT&&FAULT.pre;
+  FAULT=null; setTl(0);
+  if(pre) load(JSON.parse(pre));
+  else { simulate(); render(); panels(); }
+}
+
+/* ================= 故障场景清单 + 自动演示 ================= */
+var SCENES=[],DEMO={timer:null,step:0,playing:false},SCENE_RF=null,SCENE_TR=false;
+function mkW(a,b){ return {kind:'wire',a:a,b:b}; }
+function wireByEnds(a,b){
+  for(var i=0;i<WIRES.length;i++){ var w=WIRES[i], k1=w.a.d+':'+w.a.t, k2=w.b.d+':'+w.b.t;
+    if((k1===a&&k2===b)||(k1===b&&k2===a)) return w; }
+  return null;
+}
+function wiresAtTerm(d,t){
+  for(var i=0;i<WIRES.length;i++){ var w=WIRES[i];
+    if((w.a.d===d&&w.a.t===t)||(w.b.d===d&&w.b.t===t)) return w; }
+  return null;
+}
+function scenesDefault(){ return [
+  {c:'一、线路（电缆）故障',
+   n:'L1 电源侧主干电缆故障（甲站 → A1）', t:mkW('SUBA:f1','A1:in1'),
+   d:'甲站出线1 至 A1 电缆故障。跳开甲站出线1，隔离后经 A3 开环点合环转供。'},
+  {c:'一、线路（电缆）故障',
+   n:'L2 环网主干电缆故障（A1 → A2）', t:mkW('A1:in2','A2:in1'),
+   d:'花瓣Ⅰ 环网主干故障。跳开甲站出线1，隔离故障段后 A1 恢复、A2/A3 由 A4 侧转供。'},
+  {c:'一、线路（电缆）故障',
+   n:'L3 环网末端电缆故障（A4 → 甲）', t:mkW('A4:in2','SUBA:f2'),
+   d:'末端电缆故障。跳开甲站出线2，隔离后由 A3 开环点转供。'},
+  {c:'一、线路（电缆）故障',
+   n:'L4 配电房分支电缆故障（A1 → 配电房）', t:mkW('A1:out1','A1_L1:t'),
+   d:'分支电缆无专用开关，跳开甲站出线1；隔离后该配电房停电待修，其余转供复电。'},
+  {c:'一、线路（电缆）故障',
+   n:'L5 花瓣间联络电缆故障', t:mkW('A2:out4','B2:out4'),
+   d:'跨花瓣联络通道故障，两片花瓣解列，联络转供能力暂时丧失。'},
+  {c:'二、开关站故障',
+   n:'K1 开关站 A2 母线故障', t:{kind:'dev',id:'A2'},
+   d:'站内母线故障，A2 全站隔离，本站 2 个配电房停电待修（不可转供）。'},
+  {c:'二、开关站故障',
+   n:'K2 环网开关拒动（A3 进线1 拒动）', t:mkW('A2:in2','A3:in1'), rf:'A3:in1',
+   d:'隔离时 A3 进线1 开关拒动，故障无法从 A3 侧切除，A3 全站停电待修；对比 L2 可见拒动的代价。'},
+  {c:'三、电源（变电站）故障',
+   n:'P1 变电站甲全站失电（10 kV 母线故障）', t:{kind:'dev',id:'SUBA'},
+   d:'甲站全停，两回出线跳闸；花瓣Ⅰ 经跨花瓣联络开关由乙站转供。'},
+  {c:'三、电源（变电站）故障',
+   n:'P2 变电站乙全站失电（10 kV 母线故障）', t:{kind:'dev',id:'SUBB'},
+   d:'乙站全停；花瓣Ⅱ 经跨花瓣联络开关由甲站转供。'},
+  {c:'四、瞬时性故障（重合闸）', tr:true,
+   n:'T1 环网主干瞬时故障（重合闸成功）', t:mkW('A1:in2','A2:in1'),
+   d:'架空/电缆混合线路瞬时性故障，保护跳闸后自动重合成功，短时停电即恢复。'},
+  {c:'五、保护 / 开关异常',
+   n:'R1 甲站出线1 保护拒动（越级跳闸）', t:mkW('SUBA:f1','A1:in1'), rf:'SUBA:f1',
+   d:'出线开关拒动，保护越级跳开甲站全部出线，甲站全停，由乙站经联络转供。'}
+]; }
+function resolveTarget(str){
+  var w=findWire(str);
+  if(w) return {kind:'wire',a:w.a.d+':'+w.a.t,b:w.b.d+':'+w.b.t};
+  var p=str.split(':');
+  if(p.length===2){
+    var w2=wiresAtTerm(p[0],p[1]);
+    if(w2) return {kind:'wire',a:w2.a.d+':'+w2.a.t,b:w2.b.d+':'+w2.b.t};
+    if(DEV[p[0]]) return {kind:'term',id:str};
+    return null;
+  }
+  return DEV[str]?{kind:'dev',id:str}:null;
+}
+function sceneTarget(s){
+  var t=s.t;
+  if(t.kind==='wire'){ var w=wireByEnds(t.a,t.b); return w?{kind:'wire',id:w.id}:null; }
+  if(t.kind==='term'){ var p=t.id.split(':'); var w2=wiresAtTerm(p[0],p[1]);
+    if(w2) return {kind:'wire',id:w2.id}; return DEV[p[0]]?{kind:'dev',id:p[0]}:null; }
+  return DEV[t.id]?{kind:'dev',id:t.id}:null;
+}
+function fillScenes(){
+  var sel=document.getElementById('selScene'); sel.innerHTML='';
+  var g={},order=[];
+  SCENES.forEach(function(s,i){ var c=s.c||'其它';
+    if(!g[c]){ g[c]=document.createElement('optgroup'); g[c].label=c; order.push(c); }
+    var o=document.createElement('option'); o.value=String(i); o.textContent=s.n; g[c].appendChild(o); });
+  order.forEach(function(c){ sel.appendChild(g[c]); });
+}
+function curScene(){ return SCENES[+document.getElementById('selScene').value]||null; }
+function loadScene(s){
+  var gt=sceneTarget(s);
+  if(!gt){ fmsg('场景“'+s.n+'”的目标在当前拓扑里找不到（图元可能已被删除）。'); return false; }
+  SEL=gt; SCENE_RF=s.rf||null; SCENE_TR=!!s.tr;
+  setTlLabels(s.tr?'tr':'perm');
+  simulate(); render(); panels(); return true;
+}
+var TLL={perm:['正常运行','① 故障发生 · 保护动作','② 故障隔离','③ 转供恢复供电'],
+         tr:['正常运行','① 故障发生 · 保护跳闸','② 重合闸成功','③ 供电恢复正常']};
+function setTlLabels(kind){
+  var L=TLL[kind]||TLL.perm, c=document.querySelectorAll('#tlRow .chip');
+  for(var i=0;i<c.length;i++) c[i].textContent=L[i]||'';
+}
+function setTl(n){
+  var c=document.querySelectorAll('#tlRow .chip');
+  for(var i=0;i<c.length;i++){ var k=+c[i].getAttribute('data-s');
+    c[i].className='chip'+(k===n?' on':(k<n?' done':'')); }
+}
+function tlMsg(s){ document.getElementById('tlMsg').textContent=s; }
+function tlText(n,tr){ if(tr) return n===1?'t≈0.10 s：保护跳闸，切除故障':
+  n===2?'t≈0.60 s：自动重合闸成功':n===3?'t≈0.60 s：供电恢复，无需隔离与转供':'';
+  return n===1?'t≈0.10 s：保护动作，切除故障侧电源':
+  n===2?'t≈0.35 s：环网开关动作，隔离故障区间':
+  n===3?'t≈1.20 s：联络/备用开关合闸，非故障段转供复电':''; }
+function demoStop(){ if(DEMO.timer) clearTimeout(DEMO.timer); DEMO.timer=null; DEMO.playing=false; }
+function advance(){
+  var s=curScene(), tr=!!(s&&s.tr);
+  if(DEMO.step>=3) return;
+  if(DEMO.step===0){ if(!loadScene(s)){ demoStop(); return; } setFault(); }
+  else if(DEMO.step===1){ if(tr) reclose(); else doIso(); }
+  else { if(tr) transientEnd(); else doRestore(); }
+  DEMO.step++;
+  setTl(DEMO.step); tlMsg(tlText(DEMO.step,tr));
+  if(DEMO.playing&&DEMO.step<3) DEMO.timer=setTimeout(advance,1600);
+  else DEMO.playing=false;
+}
+function demoPlay(){
+  demoStop(); clearFault(); DEMO.step=0; setTl(0);
+  DEMO.playing=true; tlMsg('自动演示中…');
+  advance();
+}
+function demoReset(){ demoStop(); clearFault(); DEMO.step=0; setTl(0); tlMsg('尚未开始');
+  setTlLabels('perm'); fmsg('已复位：故障清除，恢复正常运行方式。'); }
+function parseFaultLines(txt){
+  var out=[];
+  txt.split('\n').forEach(function(line){
+    if(!line.trim()) return;
+    var p=line.split('|').map(function(x){ return x.trim(); });
+    var tgt=p[p.length-1], nm=p.length>1?p[0]:('自定义故障 · '+tgt);
+    var g=resolveTarget(tgt);
+    if(g) out.push({c:'六、导入的故障点',n:nm,t:g,d:'由导入的故障点生成。'});
+  });
+  return out;
+}
+document.getElementById('bFault').onclick=function(){ demoStop(); setFault(); };
+document.getElementById('bIso').onclick=function(){ demoStop(); doIso(); };
+document.getElementById('bRestore').onclick=function(){ demoStop(); doRestore(); };
+document.getElementById('bClearFault').onclick=demoReset;
+document.getElementById('bPlay').onclick=demoPlay;
+document.getElementById('bFocus').onclick=function(){
+  var m=document.getElementById('mid'); m.classList.toggle('focus');
+  this.textContent=m.classList.contains('focus')?'⛶ 退出专注':'⛶ 专注画布';
+};
+document.getElementById('bStep').onclick=function(){ demoStop(); if(DEMO.step>=3) DEMO.step=0; advance(); };
+document.getElementById('selScene').onchange=function(){ demoStop(); DEMO.step=0; clearFault(); setTl(0);
+  var s=curScene(); tlMsg('尚未开始');
+  if(s){ loadScene(s); fmsg(s.n+'：'+s.d); } };
+document.getElementById('bImpFault').onclick=function(){
+  var b=document.getElementById('impBox'); b.style.display=(b.style.display==='block')?'none':'block'; };
+document.getElementById('bImpCancel').onclick=function(){ document.getElementById('impBox').style.display='none'; };
+document.getElementById('bImpGo').onclick=function(){
+  var list=parseFaultLines(document.getElementById('impTxt').value);
+  var hint=document.getElementById('impHint');
+  if(!list.length){ hint.textContent='没有解析出有效故障点，检查一下格式（名称 | 目标）。'; return; }
+  list.forEach(function(s){ SCENES.push(s); });
+  fillScenes();
+  document.getElementById('selScene').value=String(SCENES.length-1);
+  hint.textContent='已载入 '+list.length+' 个故障点';
+  document.getElementById('impBox').style.display='none';
+  fmsg('已导入 '+list.length+' 个故障点，可在下拉框中逐个演示。');
+};
+
+/* ================= 面板 ================= */
+function refresh(){ simulate(); render(); }
+function paint(){ simulate(); render(); panels(); faultPanel(); }
+function faultPanel(){
+  if(!FAULT) return;
+  var s='【'+FAULT.label+'】'+(FAULT.msg||'');
+  if(FAULT.iso&&FAULT.iso.length&&!(FAULT.restored&&FAULT.restored.length))
+    s+='（已隔离 '+FAULT.iso.length+' 处）';
+  fmsg(s+'　|　当前失电配电房 '+deadLoads()+' 个');
+}
+function panels(){
+  var nLoad=0,nDead=0,dead=[],nOpen=0,nTie=0,nIso=0,nSp=0,used={};
+  WIRES.forEach(function(w){ used[w.a.d+':'+w.a.t]=1; used[w.b.d+':'+w.b.t]=1; });
+  ORDER.forEach(function(id){
+    var d=DEV[id];
+    d.terms.forEach(function(t){
+      if(!t.sw){ nOpen++; if(t.tie) nTie++; }
+      if(!used[id+':'+t.id]&&d.type==='sta'&&t.k==='sp') nSp++;
+      if(t.k==='load'){ nLoad++; if(!EN[id+':'+t.id]){ nDead++; dead.push(d.name); } }
+    });
+    if(d.type==='sta'&&!EN[id+':bus']) nIso++;
+  });
+  var nSta=ORDER.filter(function(i){ return DEV[i].type==='sta'; }).length;
+  function ringOpen(pre){ var n=0;
+    ORDER.forEach(function(id){ if(id.indexOf(pre)!==0) return;
+      DEV[id].terms.forEach(function(t){ if(!t.sw&&t.k==='in') n++; }); });
+    return n; }
+  var deadSrc=SRC.filter(function(x){ return DEADSRC[x]; });
+  document.getElementById('tags').innerHTML=
+    '<span class="tag act"><i></i>10 kV 配电网 · 双花瓣接线</span>'+
+    '<span class="tag '+(deadSrc.length?'bad':'ok')+'"><i></i>电源 <b>'+SRC.length+'</b> 座变电站'+
+      (deadSrc.length?('（'+deadSrc.map(function(x){return DEV[x].name;}).join('、')+'失电）'):'')+'</span>'+
+    '<span class="tag"><i></i>开关站 <b>'+nSta+'</b> 座</span>'+
+    '<span class="tag"><i></i>配电房 <b>'+nLoad+'</b> 个</span>'+
+    '<span class="tag '+(nDead?'bad':'ok')+'"><i></i>失电配电房 <b>'+nDead+'</b> 个</span>'+
+    '<span class="tag '+(SIM.paired?'warn':'ok')+'"><i></i>运行方式 <b>'+(SIM.paired?'合环（并列）':'开环运行')+'</b></span>'+
+    (FAULT?'<span class="tag warn"><i></i>故障演练中 <b>'+(FAULT.label||'')+'</b></span>':'');
+  document.getElementById('pRun').innerHTML=
+    '<div class="kv">电源点：<i>'+SRC.length+'</i> 座变电站（10 kV 母线）</div>'+
+    '<div class="kv">开关站：<i>'+nSta+'</i> 座 · 分位开关 <i>'+nOpen+'</i> 个（含常开联络 '+nTie+'）</div>'+
+    '<div class="kv">配电房：<i>'+nLoad+'</i> 个，失电 <i class="'+(nDead?'bad':'ok')+'">'+nDead+'</i> 个</div>'+
+    '<div class="kv">运行方式：<i class="'+(SIM.paired?'warn':'ok')+'">'+
+      (SIM.paired?'甲/乙已并列（合环）':'开环运行')+'</i></div>';
+  var s='<ul>';
+  if(SIM.paired) s+='<li class="warn">告警：甲、乙两站电源已并列 —— 应立即拉开一处联络/环网开关</li>';
+  else s+='<li class="ok">无双电源并列，满足开环运行</li>';
+  if(nDead) s+='<li class="bad">失电配电房 '+nDead+' 个：'+dead.slice(0,4).join('、')+(dead.length>4?' …':'')+'</li>';
+  else s+='<li class="ok">全部配电房正常供电</li>';
+  if(nIso) s+='<li class="warn">失电开关站 '+nIso+' 座（两回进线均无电）</li>';
+  if(ringOpen('A')===0) s+='<li class="warn">花瓣Ⅰ 未开环（闭环运行，需开一处环网开关）</li>';
+  if(ringOpen('B')===0) s+='<li class="warn">花瓣Ⅱ 未开环（闭环运行，需开一处环网开关）</li>';
+  if(nSp) s+='<li class="kv">预留/备用出线间隔 '+nSp+' 个（未接线）</li>';
+  if(FAULT) s+='<li class="warn">已设置故障点：'+FAULT.label+'（① 模拟 ② 隔离 ③ 恢复）</li>';
+  s+='</ul>';
+  document.getElementById('pChk').innerHTML=s;
+
+  var box=document.getElementById('pSel');
+  if(document.activeElement&&document.activeElement.id==='pInName'){
+    document.getElementById('hint').textContent='图元 '+ORDER.length+' 个 · 连线 '+WIRES.length+' 条';
+    return;
+  }
+  if(!SEL){ box.innerHTML='<div class="kv">未选中。<b>拖动图元</b>移动 · <b>拖动电缆</b>可改走线位置 · 点开关分/合 · 从端子拖到端子接线 · <b>右键</b>弹菜单。</div>'; }
+  else if(SEL.kind==='wire'){
+    box.innerHTML='<div class="kv">已选中电缆 <i>'+SEL.id+'</i></div>'+
+      '<div class="kv">直接拖动可调整走线位置；右键可“复位走线 / 设为故障点 / 删除”。</div>';
+  } else if(SEL.kind==='term'){
+    var p=SEL.id.split(':');
+    box.innerHTML='<div class="kv">端子：<i>'+p[0]+' · '+((findTermObj(p[0],p[1])||{}).n)+'</i></div>'+
+      '<div class="kv">状态：'+(EN[SEL.id]?'<i class="ok">带电</i>':'<i class="bad">失电</i>')+'</div>'+
+      '<div class="kv">可从这里拖到另一个端子完成接线</div>';
+  } else {
+    var d=DEV[SEL.id];
+    var h='<div class="row"><span class="kv">名称</span><input type="text" id="pInName" value="'+
+      d.name.replace(/"/g,'&quot;')+'"></div>'+
+      '<div class="row"><span class="kv">类型</span><i>'+TYPE[d.type]+'</i>'+
+      (d.type==='sta'
+        ? '<button class="mini" data-act="flip">翻转（进/出线互换）</button>'
+        : '<button class="mini" data-act="rot-">旋转 -15°</button><button class="mini" data-act="rot+">旋转 +15°</button>')+
+      '<button class="mini" data-act="del">删除图元</button></div>'+
+      '<div class="kv">母线：'+(EN[d.id+':bus']?'<i class="ok">带电</i>':'<i class="bad">失电</i>')+' · 所属：'+
+      (d.pet==='b'?'花瓣Ⅱ':'花瓣Ⅰ')+'</div>';
+    if(d.type!=='ld'){
+      h+='<div class="kv" style="margin:5px 0 2px">开关清单（断开影响 = 通断分析）</div>';
+      d.terms.forEach(function(t){
+        var lost=impacted(d.id,t.id);
+        var note = t.sw ? (lost.length? '断开将失电 '+lost.length+' 个配电房' : '断开后仍可由另一路供电')
+                        : (t.tie?'常开联络开关':(isIso(d.id,t.id)?'已隔离':'已分位'));
+        h+='<div class="sw"><span class="nm"><b>'+(t.tie?'★ ':'')+t.n+'</b> <em>'+(t.sw?'合':'分')+'</em></span>'+
+           '<span><button class="mini" data-act="sw" data-t="'+t.id+'">'+(t.sw?'分闸':'合闸')+'</button> '+
+           '<em class="'+(t.sw&&lost.length?'warn':'')+'">'+note+'</em></span></div>';
+      });
+    }
+    box.innerHTML=h;
+  }
+  document.getElementById('hint').textContent='图元 '+ORDER.length+' 个 · 连线 '+WIRES.length+' 条';
+}
+var pSel=document.getElementById('pSel');
+pSel.addEventListener('click',function(ev){
+  var b=ev.target.closest?ev.target.closest('button[data-act]'):null;
+  if(!b||!SEL||SEL.kind!=='dev') return;
+  var d=DEV[SEL.id], a=b.dataset.act;
+  if(a==='sw') toggle(SEL.id,b.dataset.t);
+  else if(a==='del') delDev(SEL.id);
+  else if(a==='rot-'||a==='rot+'){ push(); d.rot+=(a==='rot+'?15:-15); paint(); }
+  else if(a==='flip'){ push(); d.flip=d.flip?0:1; placeLoads(); paint(); }
+});
+pSel.addEventListener('input',function(ev){
+  if(ev.target.id!=='pInName'||!SEL||SEL.kind!=='dev') return;
+  DEV[SEL.id].name=ev.target.value; refresh();
+});
+
+build(); paint();
+SCENES=scenesDefault(); fillScenes(); setTl(0);
+window.__api={snap:snap,load:load,DEV:DEV,WIRES:WIRES,simulate:simulate,T:T,impacted:impacted,
+  hops:hops,SIM:function(){return SIM;},FLOW:function(){return FLOW;},EN:function(){return EN;},
+  setFault:setFault,doIso:doIso,doRestore:doRestore,getFault:function(){return FAULT;},
+  liveLoads:liveLoads,deadLoads:deadLoads,
+  dev:function(){return DEV;},wires:function(){return WIRES;}};
+})();
+</script>
+</body>
+</html>

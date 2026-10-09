@@ -1,0 +1,12 @@
+# 依赖（本项目零依赖，仅备将来）
+node_modules/
+
+# 本地临时产物
+*.log
+.DS_Store
+Thumbs.db
+dist/
+tmp/
+
+# 导出的自绘拓扑（运行时由浏览器下载，不入库）
+双花瓣-拓扑.json
