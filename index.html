@@ -306,7 +306,7 @@ A2 母线故障 | A2"></textarea>
           <span><svg width="40" height="18"><line x1="2" y1="9" x2="15" y2="9" stroke="#1d4ed8" stroke-width="2.6"/><line x1="25" y1="9" x2="38" y2="9" stroke="#0d9488" stroke-width="2.6"/><rect x="16" y="6" width="3.4" height="6" fill="#5b7083"/><rect x="21.5" y="6" width="3.4" height="6" fill="#e8590c"/><line x1="6" y1="2" x2="6" y2="9" stroke="#1d4ed8" stroke-width="1.6"/><line x1="11" y1="2" x2="11" y2="9" stroke="#1d4ed8" stroke-width="1.6"/><line x1="29" y1="2" x2="29" y2="9" stroke="#0d9488" stroke-width="1.6"/><line x1="34" y1="2" x2="34" y2="9" stroke="#0d9488" stroke-width="1.6"/></svg>开关站（单母线分段 + 母联）</span>
           <span><svg width="30" height="18"><line x1="15" y1="2" x2="15" y2="16" stroke="#334155" stroke-width="1.6"/><rect x="11" y="5" width="8" height="10" rx="1.2" fill="#334155"/><rect x="6.5" y="7" width="4" height="6" rx="1" fill="#334155"/><rect x="19.5" y="7" width="4" height="6" rx="1" fill="#334155"/></svg>线路终端（电缆终端头）</span>
           <span><svg width="26" height="18"><line x1="13" y1="3" x2="13" y2="15" stroke="#334155" stroke-width="1.6"/><rect x="9" y="7" width="8" height="4" rx="1" fill="#fff" stroke="#334155" stroke-width="1.3"/><line x1="6" y1="5" x2="6" y2="13" stroke="#334155" stroke-width="1.4"/></svg>母线终端</span>
-          <span><svg width="26" height="18"><line x1="10" y1="1" x2="10" y2="5" stroke="#1d4ed8" stroke-width="1.5"/><line x1="16" y1="1" x2="16" y2="5" stroke="#1d4ed8" stroke-width="1.5"/><path d="M4 5 L22 5 L13 16 Z" fill="#dbe7ff" stroke="#1d4ed8" stroke-width="1.3" stroke-linejoin="round"/></svg>负荷（配电房 · 双回路）</span>
+          <span><svg width="26" height="18"><line x1="13" y1="17" x2="13" y2="11" stroke="#1d4ed8" stroke-width="1.5"/><path d="M5 11 L21 11 L13 2 Z" fill="#dbe7ff" stroke="#1d4ed8" stroke-width="1.3" stroke-linejoin="round"/><circle cx="13" cy="13.4" r="1.7" fill="#1d4ed8"/></svg>负荷（每回用户出线一个三角形）</span>
           <span><svg width="24" height="18"><line x1="2" y1="9" x2="22" y2="9" stroke="#1d4ed8" stroke-width="2"/><rect x="8" y="4" width="8" height="11" rx="1.5" fill="#1d4ed8" stroke="#1d4ed8" stroke-width="1.2"/></svg>断路器合闸（实心）</span>
           <span><svg width="24" height="18"><line x1="2" y1="9" x2="7" y2="9" stroke="#db2777" stroke-width="2"/><line x1="17" y1="9" x2="22" y2="9" stroke="#db2777" stroke-width="2"/><rect x="8" y="4" width="8" height="11" rx="1.5" fill="#fff" stroke="#db2777" stroke-width="1.5" transform="rotate(-30 12 9)"/></svg>断路器分闸（空心）</span>
           <span><svg width="28" height="18"><line x1="2" y1="9" x2="26" y2="9" stroke="#e8590c" stroke-width="2" stroke-dasharray="6 4"/></svg>联络开关（常开）</span>
@@ -1132,15 +1132,16 @@ function render(){
       var hs=DEV[d.host], ht=hs?findTermObj(d.host,d.hterm):null,
           seg=(ht&&ht.sec===2)?'b':'a',
           root=((TOPO.secColor?seg:(d.pet==='b'))==='b')?COL.b:COL.a, lk=SZ;
-      var v1=EN[id+':t1'], v2=EN[id+':t2'], lv=v1||v2, pc=lv?root:COL.dead;
-      /* 双回路进线引下线 */
-      ln(g,-12*lk,-30*lk,-12*lk,-15*lk,v1?root:COL.dead,1.7);
-      ln(g, 12*lk,-30*lk, 12*lk,-15*lk,v2?root:COL.dead,1.7);
-      /* 负荷：三角形符号（顶点朝外） */
-      g.appendChild(el('path',{d:'M'+(-19*lk)+' '+(-15*lk)+' L '+(19*lk)+' '+(-15*lk)+' L 0 '+(19*lk)+' Z',
-        fill:lv?((TOPO.secColor&&seg==='b')?COL.bLite:COL.aLite):'#eef2f7',stroke:pc,
-        'stroke-width':1.7,'stroke-linejoin':'round'}));
-      txt(g,0,-4*lk,seg==='b'?'Ⅱ':'Ⅰ',{size:8.4,weight:700,fill:pc,halo:0});
+      var v1=EN[id+':t1'], v2=EN[id+':t2'],
+          lite=(TOPO.secColor&&seg==='b')?COL.bLite:COL.aLite;
+      /* 双回路进线：每一回用户出线各自引出一个三角形负荷符号（顶点背向开关站） */
+      [[-12,v1],[12,v2]].forEach(function(o){
+        var sx=o[0], vv=o[1], c=vv?root:COL.dead;
+        ln(g,sx*lk,-30*lk,sx*lk,-14*lk,c,1.7);
+        g.appendChild(el('path',{d:'M'+((sx-8.5)*lk)+' '+(-14*lk)+' L '+((sx+8.5)*lk)+' '+(-14*lk)+
+          ' L '+(sx*lk)+' '+(4*lk)+' Z',
+          fill:vv?lite:'#eef2f7',stroke:c,'stroke-width':1.6,'stroke-linejoin':'round'}));
+      });
       var t1=circ(g,-12*lk,-30*lk,3.2*lk,v1?root:COL.dead); hitTerm(g,t1,id,'t1');
       var t2=circ(g, 12*lk,-30*lk,3.2*lk,v2?root:COL.dead); hitTerm(g,t2,id,'t2');
     }
@@ -1508,7 +1509,7 @@ function showDoc(){ openDlg('接线约定 / 图元画法',
   '<h4>图元（与典型设计图一致）</h4><table>'+
   '<tr><td class="k">变电站</td><td><b>正方形</b> + 竖置 10 kV 母线；同一段母线出 2 回馈线，馈线端头画<b>线路终端</b>并标注示意性馈线编号（如 永福变出线1）</td></tr>'+
   '<tr><td class="k">开关站</td><td><b>单母线分段环网柜</b>（不旋转，可上下镜像）：Ⅰ段母线（蓝）与 Ⅱ段母线（青）共线横置，中间为<b>母联</b>（隔离开关常合 + 断路器）；母线外端为<b>母线终端</b>。每段母线 4 个间隔：<b>2 回用户出线（朝外）+ 2 回环网间隔（朝内，一进一出）</b>。断路器<b>实心=合位、空心斜置=分位</b></td></tr>'+
-  '<tr><td class="k">配电房</td><td><b>三角形负荷符号</b>，<b>双回路进线</b>（两回引自本站同一段母线的两回用户出线间隔），任一回带电即不停电；符号内 Ⅰ/Ⅱ 标示所属母线段</td></tr>'+
+  '<tr><td class="k">配电房</td><td><b>每一回用户出线各自带一个三角形负荷符号</b>（双回路进线，两回引自本站同一段母线的两回用户出线间隔），任一回带电即不停电；符号取所属母线段颜色（Ⅰ 段蓝 / Ⅱ 段青）</td></tr>'+
   '<tr><td class="k">终端</td><td><b>线路终端</b>=实心端子 + 两侧箭头（电缆终端头）；<b>母线终端</b>=短横 + 竖向端头</td></tr>'+
   '<tr><td class="k">联络开关</td><td>橙色虚线，常开（两个环网 / 两片花瓣之间的联络）</td></tr>'+
   '</table>'+
