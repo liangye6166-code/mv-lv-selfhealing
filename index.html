@@ -337,7 +337,7 @@
         <div class="bdy"><div class="legend">
           <span><svg width="30" height="18"><rect x="7" y="3" width="16" height="12" rx="2" fill="#f4f7fb" stroke="#334155" stroke-width="1.5"/><line x1="15" y1="5" x2="15" y2="13" stroke="#334155" stroke-width="3"/></svg>变电站（10 kV 电源）</span>
           <span><svg width="40" height="18"><line x1="2" y1="9" x2="15" y2="9" stroke="#1d4ed8" stroke-width="2.6"/><line x1="25" y1="9" x2="38" y2="9" stroke="#0d9488" stroke-width="2.6"/><rect x="16" y="6" width="3.4" height="6" fill="#5b7083"/><rect x="21.5" y="6" width="3.4" height="6" fill="#e8590c"/><line x1="6" y1="2" x2="6" y2="9" stroke="#1d4ed8" stroke-width="1.6"/><line x1="11" y1="2" x2="11" y2="9" stroke="#1d4ed8" stroke-width="1.6"/><line x1="29" y1="2" x2="29" y2="9" stroke="#0d9488" stroke-width="1.6"/><line x1="34" y1="2" x2="34" y2="9" stroke="#0d9488" stroke-width="1.6"/></svg>开关站（单母线分段 + 母联）</span>
-          <span><svg width="30" height="18"><line x1="15" y1="2" x2="15" y2="16" stroke="#334155" stroke-width="1.6"/><rect x="11" y="5" width="8" height="10" rx="1.2" fill="#334155"/><rect x="6.5" y="7" width="4" height="6" rx="1" fill="#334155"/><rect x="19.5" y="7" width="4" height="6" rx="1" fill="#334155"/></svg>线路终端（电缆终端头）</span>
+          <span><svg width="30" height="18"><line x1="2" y1="9" x2="17" y2="9" stroke="#334155" stroke-width="1.8"/><circle cx="21" cy="9" r="5" fill="#fff" stroke="#334155" stroke-width="1.5"/><circle cx="21" cy="9" r="2.8" fill="#334155"/></svg>电缆终端头（电缆末端端子）</span>
           <span><svg width="28" height="18"><line x1="2" y1="9" x2="18" y2="9" stroke="#1d4ed8" stroke-width="2.6"/><rect x="17" y="6" width="6" height="6" rx="1.2" fill="#1d4ed8"/></svg>母线终端（端头封堵）</span>
           <span><svg width="26" height="18"><line x1="13" y1="17" x2="13" y2="11" stroke="#1d4ed8" stroke-width="1.5"/><path d="M5 11 L21 11 L13 2 Z" fill="#dbe7ff" stroke="#1d4ed8" stroke-width="1.3" stroke-linejoin="round"/><circle cx="13" cy="13.4" r="1.7" fill="#1d4ed8"/></svg>负荷（每回用户出线一个三角形）</span>
           <span><svg width="24" height="18"><line x1="2" y1="9" x2="22" y2="9" stroke="#1d4ed8" stroke-width="2"/><rect x="8" y="4" width="8" height="11" rx="1.5" fill="#1d4ed8" stroke="#1d4ed8" stroke-width="1.2"/></svg>断路器合闸（实心）</span>
@@ -862,14 +862,15 @@ function busTerm(g,x,y,col){
   var sgn=(x<0?-1:1);
   g.appendChild(el('rect',{x:x+sgn*3-3,y:y-3,width:6,height:6,rx:1.2,fill:col,stroke:'none'}));
 }
-/* 线路终端（电缆终端头）：实心端子 + 两侧箭头，并标注线路名称 */
+/* 电缆终端头 = 电缆末端的一个端子（白环 + 实心圆）——不再画成箭头状，避免与潮流箭头混淆；
+   右下角返回可点击的端子节点（供 hitTerm 绑定接线） */
 function lineTerm(g,x,y,col,label,sgn){
-  g.appendChild(el('rect',{x:x-6,y:y-5,width:12,height:10,rx:1.2,fill:col,stroke:col}));
-  [-1,1].forEach(function(d){
-    g.appendChild(el('path',{d:'M'+(x+d*6)+' '+(y-5.5)+' L'+(x+d*10)+' '+y+' L'+(x+d*6)+' '+(y+5.5)+' Z',fill:col}));
-  });
-  if(label) txt(g,x+sgn*17,y-11,label,{size:10.5,weight:700,fill:col,halo:3.4,
+  g.appendChild(el('circle',{cx:x,cy:y,r:5.2,fill:'#fff',stroke:col,'stroke-width':1.5}));
+  var dot=el('circle',{cx:x,cy:y,r:2.9,fill:col,stroke:'none'});
+  g.appendChild(dot);
+  if(label) txt(g,x+sgn*15,y-11,label,{size:10.5,weight:700,fill:col,halo:3.4,
     anchor:(sgn>0?'start':'end'),spacing:.2});
+  return dot;
 }
 function faultMark(g,x,y){
   var p='M'+x+' '+(y-8)+' L'+(x-5.5)+' '+(y+1)+' L'+(x-1)+' '+(y+1)+' L'+x+' '+(y+8)+
@@ -928,35 +929,37 @@ function stepMark(g,x,y,n,col){
   g.appendChild(el('text',{x:x,y:y+4.1,'text-anchor':'middle','font-size':11.5,'font-weight':700,
     fill:'#fff'},str));
 }
-/* 步骤标记（①/②/③）自动避让：同一座站内多个标记按槽位向外散开，
-   并用细引线连回它标注的那台开关，避免互相压盖、看不清 */
+/* 步骤标记（①/②/③）：不压在开关上——统一摆到本站一侧的空白列里，
+   再用一根细引线指回被标注的那台开关（必要时连引线指示） */
 function placeStepMarks(g,marks){
-  var placed=[];
-  function hw(s){ return (s.length>1?12+s.length*7.4:22)/2+1.5; }
-  marks.forEach(function(m){
-    var w=hw(m.n), hh=12.5;
-    var sg=(m.y>m.cy)?1:((m.y<m.cy)?-1:-1);          /* 朝远离站中心的一侧散开 */
-    var lat=Math.abs(m.y-m.cy)<1;                    /* 母联（站中心）→ 标记走侧向，别压住方框 */
-    function free(x,y){ for(var i=0;i<placed.length;i++){ var p=placed[i];
-      if(Math.abs(x-p.x)<(w+p.w)&&Math.abs(y-p.y)<(hh+p.h)) return false; } return true; }
-    var base=lat?[[-30,-30],[30,-30],[-30,30],[30,30],[-52,-30],[52,-30],[-52,30],[52,30],
-                  [0,-56],[0,56],[-74,-30],[74,-30],[-30,-56],[30,-56],[-30,56],[30,56]]
-               :[[0,26],[20,30],[-20,30],[0,52],[20,56],[-20,56],[40,30],[-40,30],
-                 [0,78],[40,56],[-40,56],[20,82],[-20,82],[60,30],[-60,30],
-                 [0,104],[60,56],[-60,56],[40,82],[-40,82],[20,108],[-20,108]];
-    var x=m.x,y=m.y,ok=false;
-    for(var i=0;i<base.length;i++){ var cx=m.x+base[i][0], cy=m.y+base[i][1]*sg;
-      if(free(cx,cy)){ x=cx; y=cy; ok=true; break; } }
-    if(!ok){ for(var r=36;r<280&&!ok;r+=16) for(var a=-100;a<260;a+=20){
-      var ex=m.x+Math.cos(a*Math.PI/180)*r, ey=m.y+Math.sin(a*Math.PI/180)*r;
-      if(free(ex,ey)){ x=ex; y=ey; ok=true; break; } } }
-    if(x!==m.x||y!==m.y)
+  var byDev={};
+  marks.forEach(function(m){ (byDev[m.did]=byDev[m.did]||[]).push(m); });
+  var taken=[];                                   /* 各站已占用的徽标位（跨站防重叠） */
+  Object.keys(byDev).forEach(function(did){
+    var arr=byDev[did], d=DEV[did]; if(!d) return;
+    var side=0; arr.forEach(function(m){ side+=(m.x-d.x); }); side=(side<=0?-1:1);
+    var colX=d.x+side*77;                         /* 站内左右留白（开关只在 ±42 以内） */
+    arr.sort(function(a,b){ return a.y-b.y; });
+    var gap=27, ys=arr.map(function(m){ return m.y; });
+    for(var i=1;i<ys.length;i++) if(ys[i]-ys[i-1]<gap) ys[i]=ys[i-1]+gap;
+    var c0=(ys[0]+ys[ys.length-1])/2, cm=(arr[0].y+arr[arr.length-1].y)/2;
+    var dy=cm-c0; ys=ys.map(function(v){ return v+dy; });
+    /* 跨站再避让一次（相邻站间距 240，正常不会撞） */
+    ys=ys.map(function(v,k){
+      var w=badgeHW(arr[k].n);
+      while(taken.some(function(t){ return Math.abs(t.x-colX)<w+t.w && Math.abs(t.y-v)<26; })) v+=gap;
+      taken.push({x:colX,y:v,w:w});
+      return v;
+    });
+    arr.forEach(function(m,i){
+      var x=colX, y=ys[i];
       g.appendChild(el('line',{x1:m.x,y1:m.y,x2:x,y2:y,stroke:m.col,'stroke-width':1,
-        'stroke-dasharray':'2.4 2.4','stroke-opacity':.65,'stroke-linecap':'round'}));
-    placed.push({x:x,y:y,w:w,h:hh});
-    stepMark(g,x,y,m.n,m.col);
+        'stroke-dasharray':'2.4 2.4','stroke-opacity':.7,'stroke-linecap':'round'}));
+      stepMark(g,x,y,m.n,m.col);
+    });
   });
 }
+function badgeHW(s){ return (s.length>1?12+s.length*7.4:22)/2+1.5; }
 /* 动作过程（右侧面板，HTML 渲染） */
 function esc(x){ return String(x==null?'':x).replace(/[&<>"]/g,function(c){
   return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
@@ -1216,8 +1219,7 @@ function render(){
         g.appendChild(hit);
         markSwitch(g,mx,t.ty,id,t.id);
         if(FAULT) MK.push([id,t.id,mx,t.ty]);
-        lineTerm(g,t.tx+sgn*13,t.ty,col,t.ln,sgn);
-        var tc=circ(g,t.tx,t.ty,3,col); hitTerm(g,tc,id,t.id);
+        var tc=lineTerm(g,t.tx,t.ty,col,t.ln,sgn); hitTerm(g,tc,id,t.id);
       });
     } else {
       /* 配电房（用户）：双回路进线，分别引自本站同一段母线的两回用户出线间隔 */
@@ -1281,7 +1283,7 @@ function render(){
       if(!ns.length) return;
       var uniq=[]; ns.forEach(function(v){ if(uniq.indexOf(v)<0) uniq.push(v); });
       var p=xf(DEV[m[0]],m[2],m[3]);
-      mk.push({x:p[0],y:p[1],cy:DEV[m[0]].y,n:uniq.join('·'),col:col});
+      mk.push({x:p[0],y:p[1],did:m[0],n:uniq.join('·'),col:col});
     });
     placeStepMarks(gL,mk);
   }
@@ -1602,10 +1604,10 @@ function showKeys(){ openDlg('快捷键一览',
   '<tr><td class="k">右键</td><td>弹出图元 / 电缆菜单</td></tr></table>'); }
 function showDoc(){ openDlg('接线约定 / 图元画法',
   '<h4>图元（与典型设计图一致）</h4><table>'+
-  '<tr><td class="k">变电站</td><td><b>正方形</b> + 竖置 10 kV 母线；同一段母线出 2 回馈线，馈线端头画<b>线路终端</b>并标注示意性馈线编号（如 变电站1出线1）</td></tr>'+
+  '<tr><td class="k">变电站</td><td><b>正方形</b> + 竖置 10 kV 母线；同一段母线出 2 回馈线，馈线末端为<b>电缆终端头</b>（端子）并标注示意性馈线编号（如 变电站1出线1）</td></tr>'+
   '<tr><td class="k">开关站</td><td><b>单母线分段环网柜</b>（不旋转，可上下镜像）：Ⅰ段母线（蓝）与 Ⅱ段母线（青）共线横置，中间为<b>母联</b>（分段开关：横置长条方框，空心=分位、实心=合位）；母线外端为<b>母线终端</b>（端头实心方块）。每段母线 4 个间隔：<b>2 回用户出线（朝外）+ 2 回环网间隔（朝内，一进一出）</b>。断路器<b>实心=合位、空心=分位</b></td></tr>'+
   '<tr><td class="k">配电房</td><td><b>每一回用户出线各自带一个三角形负荷符号</b>（双回路进线，两回引自本站同一段母线的两回用户出线间隔），任一回带电即不停电；符号取所属母线段颜色（Ⅰ 段蓝 / Ⅱ 段青）</td></tr>'+
-  '<tr><td class="k">终端</td><td><b>线路终端</b>=实心端子 + 两侧箭头（电缆终端头）；<b>母线终端</b>=短横 + 竖向端头</td></tr>'+
+  '<tr><td class="k">终端</td><td><b>电缆终端头</b>=电缆末端的端子（白环 + 实心圆）；<b>母线终端</b>=母线末端的实心小方块（端头封堵）</td></tr>'+
   '<tr><td class="k">联络开关</td><td>橙色虚线，常开（两个环网 / 两片花瓣之间的联络）</td></tr>'+
   '</table>'+
   '<h4>双花瓣接线（教科书方式）</h4><table>'+
