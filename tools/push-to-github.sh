@@ -28,7 +28,7 @@ if [ "${1:-}" = "--create" ]; then
   echo "· 通过 GitHub API 创建仓库 $REPO（$VIS）"
   code=$(curl -s -o /tmp/gh-create.json -w '%{http_code}' -X POST https://api.github.com/user/repos \
     -H "Authorization: Bearer $TOKEN" -H 'Accept: application/vnd.github+json' \
-    -d "{\"name\":\"${REPO#*/}\",\"description\":\"双花瓣配电网 · 仿真工作台（中压自愈过程演示底座）\",\"private\":$([ "$VIS" = public ] && echo false || echo true)}")
+    -d "{\"name\":\"${REPO#*/}\",\"description\":\"中低压协同自愈 · 仿真工作台（10 kV 配电网自愈过程演示底座）\",\"private\":$([ "$VIS" = public ] && echo false || echo true)}")
   if [ "$code" = "201" ]; then echo "  已创建"; else echo "  API 返回 $code（多为仓库已存在，继续用已有仓库）"; fi
   URL="https://${TOKEN}@github.com/${REPO}.git"
 else

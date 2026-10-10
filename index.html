@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>双花瓣配电网 · 可编辑 / 可仿真原型</title>
+<title>中低压协同自愈 · 可编辑 / 可仿真原型</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%231d4ed8'/%3E%3Ccircle cx='11' cy='16' r='4.6' fill='none' stroke='%23fff' stroke-width='2.2'/%3E%3Ccircle cx='21' cy='16' r='4.6' fill='none' stroke='%230d9488' stroke-width='2.2'/%3E%3C/svg%3E">
 <style>
   :root{--ink:#12263f;--muted:#5b7083;--a:#1d4ed8;--b:#0d9488;--tie:#e8590c;
@@ -446,7 +446,7 @@
 <div class="app">
   <header class="pane menubar">
     <button class="mobbtn" id="bPanelL" title="元件库 / 网架结构 / 故障演练">☰ 面板</button>
-    <div class="brand">双花瓣配电网 <em>仿真工作台</em></div>
+    <div class="brand">中低压协同自愈 <em>仿真工作台</em></div>
     <nav class="mn" id="mn">
       <button class="mnu" data-m="file">文件</button>
       <button class="mnu" data-m="edit">编辑</button>
@@ -1045,7 +1045,7 @@ function loadTopo(k){ if(!LAYOUTS[k]) return;
   demoStop(); DEMO.step=0;                                  /* 换模板：清空演练态 */
   TOPO.kind=k; build(); Z=1; CX=800; CY=450; zoomFit();
   setTl(0); tlMsg('尚未开始');
-  document.title='双花瓣配电网 · '+TOPO.name+' · 仿真工作台';
+  document.title='中低压协同自愈 · '+TOPO.name+' · 仿真工作台';
   SCENES=scenesDefault(); SCENES=SCENES.filter(function(x){ return !!sceneTarget(x); });
   fillScenes();
   var cs=curScene(); setTlLabels(cs&&cs.tr?'tr':'perm');
@@ -2198,7 +2198,7 @@ function actReset(){
   UNDO=[]; FAULT=null; DEADSRC={}; DEMO.step=0; DEMO.playing=false; DEMO.paused=false;
   SEL=null; build(); setTl(0); tlMsg('尚未开始');
   var cs=curScene(); setTlLabels(cs&&cs.tr?'tr':'perm');
-  document.title='双花瓣配电网 · '+TOPO.name+' · 仿真工作台';
+  document.title='中低压协同自愈 · '+TOPO.name+' · 仿真工作台';
   paint(); setPlayBtn();
   fmsg('已复位为「'+TOPO.name+'」初始运行方式。'); }
 function actUndo(){ var u=UNDO.pop(); if(u) load(JSON.parse(u)); }
@@ -2514,9 +2514,9 @@ function showDoc(){ openDlg('接线约定 / 图元画法',
   '</table>'+
   '<h4>已知简化</h4><p>未做载流量与保护定值配合校核；“转供容量不足”按<b>可转供户数上限</b>示意（超出部分按限电拉开用户出线）；重合闸：瞬时性按一次重合成功、永久性按重合不成功加速跳闸；单相接地按不跳闸 + 人工试拉处理；备自投按“各站独立动作”演示。本工具为演示原型，不可作为现场操作依据。</p>'); }
 function showAbout(){ openDlg('关于本工具',
-  '<p><b>中压自愈过程演示底座</b> —— 10 kV 双花瓣 / 环网 / 辐射网架的过程演示、演练与搭网。</p>'+
+  '<p><b>中低压协同自愈 · 仿真底座</b> —— 10 kV 配电网（双花瓣 / 单花瓣 / 双环网 / 单环网 / 单辐射）的过程演示、演练与搭网；低压台区二期预留。</p>'+
   '<h4>产品定位</h4>'+
-  '<table><tr><td class="k">是</td><td>中压自愈过程演示底座（故障 → 隔离 → 转供；低压二期）'+
+  '<table><tr><td class="k">是</td><td>中低压协同自愈过程演示底座（中压故障 → 隔离 → 转供；低压台区二期）'+
   '· 逻辑清晰、状态可映射沙盘灯带 · 可拖拽图元搭网架，便于以后对真实线路</td></tr>'+
   '<tr><td class="k">不是</td><td>主站全量 SCADA / 保护整定软件 · 一次接线图 CAD · DTU / FTU / TTU / PT / CT 等测控细件</td></tr></table>'+
   '<h4>能做什么</h4><p>· 五种预设网架（双花瓣 / 单花瓣 / 双环网 / 单环网 / 单辐射）一键载入；'+
@@ -3767,7 +3767,7 @@ window.addEventListener('orientationchange',function(){
 syncRotMask();
 
 build(); paint(); zoomFit();          /* 首屏即按内容包围盒“适应”，模板不漂在点阵里 */
-document.title='双花瓣配电网 · '+TOPO.name+' · 仿真工作台';
+document.title='中低压协同自愈 · '+TOPO.name+' · 仿真工作台';
 SCENES=scenesDefault(); fillScenes(); setTl(0);
 autoFitSide();
 window.__api={snap:snap,load:load,DEV:DEV,WIRES:WIRES,simulate:simulate,T:T,impacted:impacted,
