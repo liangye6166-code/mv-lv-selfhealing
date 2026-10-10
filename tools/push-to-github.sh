@@ -14,6 +14,13 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
+# 若存在本项目专用部署密钥（~/.ssh/id_ed25519_doublepetal），SSH 推送时优先用它
+# —— 配合 GitHub 仓库的 Deploy key（勾 Allow write access），可只授权这一个仓库。
+DEPLOY_KEY="$HOME/.ssh/id_ed25519_doublepetal"
+if [ -f "$DEPLOY_KEY" ] && [ -z "${GIT_SSH_COMMAND:-}" ]; then
+  export GIT_SSH_COMMAND="ssh -i $DEPLOY_KEY -o IdentitiesOnly=yes -o StrictHostKeyChecking=accept-new"
+fi
+
 TOKEN_HEADER=""
 if [ "${1:-}" = "--create" ]; then
   REPO="${2:-}"; TOKEN="${3:-}"; VIS="${4:-private}"

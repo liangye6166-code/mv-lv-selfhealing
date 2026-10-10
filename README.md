@@ -202,6 +202,10 @@ tools/push-to-github.sh --create <user>/<repo> <TOKEN>          # 私有
 tools/push-to-github.sh --create <user>/<repo> <TOKEN> public   # 公开
 ```
 
+- **不想给 Token？用「部署密钥」**：在 GitHub 仓库 → `Settings` → `Deploy keys` → `Add deploy key`，
+  贴入本机专用公钥 `~/.ssh/id_ed25519_doublepetal.pub` 并勾上 **Allow write access**（只授权这一个仓库）；
+  `tools/push-to-github.sh` 检测到该密钥会自动用它发起 SSH 推送。（`Deploy key` 不能新建仓库，
+  仓库需要你先在 GitHub 上建一个空的。）
 - Token 只需 **classic PAT 的 `repo` 权限**（脚本只用来建仓库 / 推送；推送完成后 origin 会改写成**不含 Token** 的地址，Token 不会留在 `.git/config`，也不回显）。
 - 也可以用 SSH：把本机公钥（`~/.ssh/id_ed25519.pub`）加到 GitHub → Settings → SSH keys，
   再用 `git@github.com:<user>/<repo>.git` 推送。
