@@ -188,6 +188,25 @@ var st = window.__api.status();
 
 详见 [`docs/接线约定.md`](docs/接线约定.md)。
 
+## 备份到 GitHub
+
+仓库本身就是一个标准 git 仓库（分支 `main`，每个版本一个标签 `v1.x.y`）。因为工作台是**单文件零依赖**，
+`.github/workflows/pages.yml` 已经配好：推到 `main` 即自动发 GitHub Pages，也能当在线 demo 用。
+
+```bash
+# ① 仓库已在 GitHub 建好（空仓库即可）——直接推送主干 + 全部标签
+tools/push-to-github.sh git@github.com:<user>/<repo>.git
+
+# ② 连仓库都没建——给一个 Token，脚本替你建（默认私有）并推送
+tools/push-to-github.sh --create <user>/<repo> <TOKEN>          # 私有
+tools/push-to-github.sh --create <user>/<repo> <TOKEN> public   # 公开
+```
+
+- Token 只需 **classic PAT 的 `repo` 权限**（脚本只用来建仓库 / 推送，不落盘、不回显）。
+- 也可以用 SSH：把本机公钥（`~/.ssh/id_ed25519.pub`）加到 GitHub → Settings → SSH keys，
+  再用 `git@github.com:<user>/<repo>.git` 推送。
+- 本地只推 `main` / `--all` / `--tags`，不修改任何提交历史。
+
 ## 快捷键
 
 完整表也可以在页面里按 `F1` / `?`（或「帮助 → 快捷键一览」）随时查看。
