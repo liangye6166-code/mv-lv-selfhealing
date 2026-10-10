@@ -396,7 +396,7 @@
 <body>
 <div class="app">
   <header class="pane menubar">
-    <button class="mobbtn" id="bPanelL" title="模板 / 演练 / 动作过程">☰ 面板</button>
+    <button class="mobbtn" id="bPanelL" title="元件库 / 拓扑模板 / 故障场景库">☰ 面板</button>
     <div class="brand">双花瓣配电网 <em>仿真工作台</em></div>
     <nav class="mn" id="mn">
       <button class="mnu" data-m="file">文件</button>
@@ -411,7 +411,7 @@
       <button id="bOut" class="mini" title="开关站母联：常开 = 两段互为备用；常合 = 两段并列运行">母联常开</button>
     </span>
     <span class="tbright">
-      <button class="mobbtn" id="bPanelR" title="图元属性 / 编辑 / 通断分析">⚙ 属性</button>
+      <button class="mobbtn" id="bPanelR" title="动作过程 / 图元属性 / 通断分析">⚙ 属性</button>
       <span class="hint" id="hint"></span>
       <span class="ctl" title="符号比例：只缩放图元符号，不改变画布缩放">符号比例
         <input type="range" id="rSz" min="55" max="130" step="5" value="80"><b id="lSz" class="num">80%</b></span>
@@ -488,11 +488,6 @@
         </div>
       </div>
 
-      <div class="pane box">
-        <b>动作过程 <span class="tlstate" id="tlMsg">尚未开始</span></b>
-        <div id="pAct" class="act"></div>
-      </div>
-
     </aside>
 
     <section class="stage pane">
@@ -515,6 +510,10 @@
 
     <aside class="side sider" id="sideR">
       <button class="drawerx" id="xR">✕ 收起面板</button>
+      <div class="pane box">
+        <b>动作过程 <span class="tlstate" id="tlMsg">尚未开始</span></b>
+        <div id="pAct" class="act"></div>
+      </div>
       <div class="pane box"><b>图元属性 · 编辑 · 通断分析</b><div id="pSel"></div></div>
     </aside>
   </div>
@@ -2852,7 +2851,7 @@ function tlSummary(n){
   return '';
 }
 function tlText(n){ return tlSummary(n); }
-/* 三条入口（①②③ / 单步 / 自动演示）共用的进度同步：右侧动作过程、左侧时间轴、底栏同源 */
+/* 三条入口（①②③ / 单步 / 自动演示）共用的进度同步：右栏「动作过程」与底栏芯片同源 */
 function syncPhase(){ var n=FAULT?(FAULT.phase||0):0; DEMO.step=n; setTl(n);
   tlMsg(FAULT?tlSummary(n):'尚未开始'); }
 function ensurePhase(n){ if(FAULT&&(FAULT.phase||0)<n) FAULT.phase=n; }
@@ -2945,7 +2944,7 @@ function ownerLabel(d){
       :('负荷 · '+(sec===2?'Ⅱ':'Ⅰ')+'段母线'); }
   return '';
 }
-/* 底栏只留短状态（长解释在左栏「动作过程」时间轴里，只说一遍） */
+/* 底栏只留短状态（长解释在右栏「动作过程」时间轴里，只说一遍） */
 function faultPanel(){
   if(!FAULT){ return; }
   var ph=FAULT.phase||0;
