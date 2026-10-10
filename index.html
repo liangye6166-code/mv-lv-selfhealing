@@ -95,6 +95,9 @@
   .stage{padding:7px;display:flex;min-height:0}
   svg.d{flex:1;width:100%;height:100%;min-height:0;display:block;background:#fdfeff;
     border:1px solid var(--line);border-radius:9px;touch-action:none;user-select:none;cursor:default}
+  svg.d.pan{cursor:grab}                      /* 空格 / 抓手模式：小手 */
+  svg.d.pan *{cursor:inherit!important}       /* 抓手模式下连图元上也显示小手 */
+  svg.d.panning,svg.d.panning *{cursor:grabbing!important}
   .foot{padding:7px 15px;display:flex;gap:10px;align-items:center;font-size:12.5px;min-height:36px}
   .foot .t{color:#c92a2a;font-weight:700;white-space:nowrap}
   .foot .msg{color:var(--muted);flex:1}
@@ -140,6 +143,8 @@
     line-height:1.5;color:#33465c;cursor:pointer}
   .zoombar button:hover{background:#eef3fa}
   .zoombar .lv{min-width:44px;text-align:center;color:var(--ink);font-weight:700;font-size:11.5px;cursor:pointer}
+  .zoombar button.on{background:#1d4ed8;border-color:#1d4ed8;color:#fff}
+  .zoombar button{display:inline-flex;align-items:center;justify-content:center}
 
   /* ── 底部状态栏 ── */
   .foot{padding:8px 14px;display:grid;grid-template-columns:minmax(0,1.6fr) minmax(0,1fr);gap:6px 18px;
@@ -311,6 +316,9 @@
     border-radius:6px;font-size:12.5px;color:var(--ink);cursor:pointer}
   .ctx button:hover{background:#eef3fa}
   .ctx button.danger{color:#c92a2a}
+  .ctx button .k{margin-left:auto;color:#9aa9bb;font-size:11px}
+  .ctx button{display:flex;gap:10px;align-items:center}
+  .ctx hr{border:0;border-top:1px solid #eef1f6;margin:4px 2px}
 
   /* ══ 顶栏分区：左 品牌+菜单 / 中 运行方式 / 右 计数+缩放 ══ */
   .tbmid{display:flex;align-items:center;gap:7px;margin:0 auto;flex-wrap:wrap;justify-content:center}
@@ -556,6 +564,7 @@
         <span class="lv" id="zLv" title="点击回到 100%">100%</span>
         <button id="zIn" title="放大（滚轮 / +）">＋</button>
         <button id="zFit" title="适应窗口（F）">适应</button>
+        <button id="zPan" title="抓手模式（也可按住空格临时切换）：拖动画布即平移"><svg viewBox="0 0 24 24" width="13" height="13" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8.6 12V6a1.4 1.4 0 0 1 2.8 0v5.6"/><path d="M11.4 11.2V4.9a1.4 1.4 0 0 1 2.8 0v6.1"/><path d="M14.2 11.2V6.6a1.4 1.4 0 0 1 2.8 0v4.6"/><path d="M17 11.4V9.4a1.4 1.4 0 0 1 2.8 0v5.3a6 6 0 0 1-6 6h-1.6a5 5 0 0 1-3.6-1.5l-3.9-3.9a1.5 1.5 0 0 1 2.1-2.1l1.8 1.8"/></svg></button>
       </div>
     </section>
 
@@ -1344,7 +1353,7 @@ function devCtx(id,ev){
   var d=DEV[id]; if(!d) return;
   ev.preventDefault(); ev.stopPropagation(); hideCtx();
   CTXDEV=id; CTXWIRE=null; SEL={kind:'dev',id:id}; paint();
-  var items=[];
+  var items=[{a:'copy',t:'复制',k:'Ctrl+C'},{a:'dup',t:'原地复制',k:'Ctrl+D'},{a:'paste',t:'粘贴',k:'Ctrl+V'},{a:'-'}];
   if(d.type==='sta') items.push({a:'flip',t:'上下镜像（Ⅰ / Ⅱ 段互换位置）'});
   else items=[{a:'mirror',t:'左右镜像（出线换向）'},{a:'rotcw',t:'顺时针旋转 15°'},
               {a:'rotccw',t:'逆时针旋转 15°'},{a:'rot0',t:'角度归零'}];
@@ -1416,7 +1425,7 @@ function render(){
     hit.style.cursor='move';
     hit.addEventListener('contextmenu',function(ev){ ev.preventDefault(); ev.stopPropagation();
       hideCtx(); CTXDEV=null; CTXWIRE=w.id;
-      openCtx(ev.clientX,ev.clientY,[{a:'bias0',t:'复位走线'},
+      openCtx(ev.clientX,ev.clientY,[{a:'bias0',t:'复位走线'},{a:'-'},
         {a:isTie?'untie':'tie',t:isTie?'取消常开联络标记':'设为常开联络（分位）'},
         {a:'fault',t:'设为故障点'},{a:'del',t:'删除这条电缆',cls:'danger'}],
         '电缆 '+(isTie?'（常开联络）':'')); });
@@ -1729,11 +1738,25 @@ SVG.addEventListener('mousemove',function(ev){
 window.addEventListener('mouseup',function(){
   if(drag&&drag.kind==='link'){ drag=null; PREV=null; refresh(); }
   else drag=null;
-  SVG.style.cursor=''; });
-SVG.addEventListener('mousedown',function(ev){ if(ev.target===SVG){
-  hideCtx(); SEL=null; paint();
+  SVG.classList.remove('panning'); });
+/* 捕获阶段：空白处 = 平移；空格 / 抓手模式下在图元上按下也平移（优先级高于图元拖动） */
+SVG.addEventListener('mousedown',function(ev){
+  var blank=(ev.target===SVG);
+  if(!blank&&!panOn()) return;
+  if(blank){ hideCtx(); SEL=null; paint(); }
   drag={kind:'pan',sx:ev.clientX,sy:ev.clientY,cx:CX,cy:CY,k:worldPerPx()};
-  SVG.style.cursor='grabbing'; ev.preventDefault(); } });
+  SVG.classList.add('panning'); ev.preventDefault(); ev.stopPropagation(); },true);
+/* 空白画布右键：粘贴 / 视图 / 运行方式（在当前鼠标处落子） */
+SVG.addEventListener('contextmenu',function(ev){
+  if(ev.target!==SVG) return;
+  ev.preventDefault(); hideCtx(); SEL=null; paint();
+  var items=[];
+  if(CLIP) items.push({a:'pasteHere',t:'粘贴到此处',k:'Ctrl+V'});
+  else items.push({a:'paste',t:'粘贴',k:'Ctrl+V'});
+  items.push({a:'-',},{a:'zoomFit',t:'适应窗口',k:'F'},{a:'flow',t:'显示潮流箭头',k:'V'},
+    {a:'glow',t:'显示主干辉光',k:'G'},{a:'-',},{a:'clear',t:'复位运行方式',k:'0'});
+  CTXWIRE=null; CTXDEV=null; CTXTHERE=[ev.clientX,ev.clientY];
+  openCtx(ev.clientX,ev.clientY,items,'画布'); });
 SVG.addEventListener('wheel',function(ev){ ev.preventDefault();
   var w=toWorld(ev); zoomAt(ev.deltaY<0?1.12:1/1.12,w[0],w[1]); },{passive:false});
 /* 触摸屏：双指捏合缩放（以两指中点锚定并跟随移动），单指拖动由鼠标事件承担 */
@@ -1938,6 +1961,7 @@ function copySel(){ if(!SEL||SEL.kind!=='dev') return null;
   CLIP={ devs:ids.map(function(i){ return JSON.parse(JSON.stringify(DEV[i])); }),
          wires:WIRES.filter(function(w){ return ids.indexOf(w.a.d)>=0&&ids.indexOf(w.b.d)>=0; })
                      .map(function(w){ return {a:{d:w.a.d,t:w.a.t},b:{d:w.b.d,t:w.b.t}}; }) };
+  CLIP.ax=DEV[SEL.id].x; CLIP.ay=DEV[SEL.id].y;      /* 剪贴板锚点：供「粘贴到此处」定位 */
   return CLIP; }
 function pasteClip(dx,dy){ if(!CLIP) return;
   push(); var map={};
@@ -2014,10 +2038,11 @@ var MENUDEF={
     ['reset','复位拓扑（回到当前模板初始状态）']]},
   view:{title:'视图',items:[['zoomIn','放大','+'],['zoomOut','缩小','−'],['zoomFit','适应窗口','F'],
     ['zoom100','实际大小 100%'],['-'],['szUp','符号比例 ＋'],['szDn','符号比例 −'],['-'],
-    ['focus','专注画布'],['flow','显示潮流箭头'],['glow','显示主干辉光'],['-'],
+    ['focus','专注画布','Z'],['flow','显示潮流箭头','V'],['glow','显示主干辉光','G'],
+    ['panmode','抓手模式（按住空格）','Space'],['-'],
     ['navPal','左栏：元件库'],['navTopo','左栏：网架结构'],['navSim','左栏：故障演练'],['-'],
     ['rtabSel','右栏：元件属性'],['rtabAct','右栏：动作过程']]},
-  drill:{title:'演练',items:[['demo','▶ 自动演示'],['step','单步执行'],['clear','复位运行方式'],['-'],
+  drill:{title:'演练',items:[['demo','▶ 自动演示','P'],['step','单步执行','N'],['clear','复位运行方式','0'],['-'],
     ['impFault','导入故障点…']]},
   help:{title:'帮助',items:[['keys','快捷键一览'],['doc','接线约定 / 图元画法'],['about','关于本工具']]}
 };
@@ -2026,11 +2051,12 @@ var ACTFN={loop:actLoop,new:actReset,reset:actReset,export:actExport,import:actI
   allClose:actAllClose,allOpen:actAllOpen,zoomIn:actZoomIn,zoomOut:actZoomOut,zoomFit:actZoomFit,
   zoom100:actZoom100,focus:actFocus,flow:actFlow,glow:actGlow,outward:actOutward,demo:actDemo,
   step:actStep,clear:actClear,impFault:actImpFault,keys:showKeys,doc:showDoc,about:showAbout,
-  szUp:function(){ setSz(SZ*100+10); },szDn:function(){ setSz(SZ*100-10); },
+  szUp:function(){ setSz(SZ*100+10); },szDn:function(){ setSz(SZ*100-10); },panmode:actPan,
   navPal:function(){ setNav('pal'); },navTopo:function(){ setNav('topo'); },navSim:function(){ setNav('sim'); },
   rtabSel:function(){ setRTab('sel'); },rtabAct:function(){ setRTab('act'); }};
 function menuState(k){ if(k==='flow') return SHOW_FLOW; if(k==='glow') return SHOW_GLOW;
   if(k==='outward') return OUT; if(k==='loop') return LOOP;
+  if(k==='panmode') return !!(SPACE||PAN_LOCK);
   if(k==='navPal') return NAV_P==='pal'; if(k==='navTopo') return NAV_P==='topo'; if(k==='navSim') return NAV_P==='sim';
   if(k==='rtabSel') return RTAB==='sel'; if(k==='rtabAct') return RTAB==='act';
   if(k==='focus') return document.getElementById('mid').classList.contains('focus'); return false; }
@@ -2072,24 +2098,44 @@ function showKeys(){ openDlg('快捷键一览',
   '<tr><td class="k">左栏图标条</td><td>元件库 / 网架结构 / 故障演练 三页竖向切换，默认「网架结构」</td></tr>'+
   '<tr><td class="k">右栏标签</td><td>元件属性 / 动作过程；默认「元件属性」，开始故障演练后自动切到「动作过程」</td></tr>'+
   '</table>'+
-  '<h4>键鼠</h4><table>'+
-  '<tr><td class="k">滚轮 / + / −</td><td>缩放画布（以光标为中心）</td></tr>'+
-  '<tr><td class="k">空白处拖动</td><td>平移画布</td></tr>'+
-  '<tr><td class="k">F</td><td>适应窗口</td></tr>'+
+  '<h4>编辑 · 剪贴板</h4><table>'+
   '<tr><td class="k">Ctrl/⌘ + Z</td><td>撤销</td></tr>'+
-  '<tr><td class="k">Ctrl/⌘ + C / V</td><td>复制 / 粘贴选中图元（含其配电房）</td></tr>'+
-  '<tr><td class="k">Ctrl/⌘ + D</td><td>原地复制</td></tr>'+
+  '<tr><td class="k">Ctrl/⌘ + C</td><td>复制选中图元（含挂在它上面的配电房与电缆）</td></tr>'+
+  '<tr><td class="k">Ctrl/⌘ + V</td><td>粘贴（偏移一点落子；右键空白画布可「粘贴到此处」）</td></tr>'+
+  '<tr><td class="k">Ctrl/⌘ + D</td><td>原地复制（偏移 40,40）</td></tr>'+
   '<tr><td class="k">Ctrl/⌘ + S</td><td>保存到本地存档</td></tr>'+
-  '<tr><td class="k">Delete</td><td>删除选中的电缆 / 图元</td></tr>'+
-  '<tr><td class="k">R / Shift + R</td><td>旋转选中图元 ±15°（开关站为翻转进/出线）</td></tr>'+
+  '<tr><td class="k">Delete / Backspace</td><td>删除选中的电缆 / 图元</td></tr>'+
+  '<tr><td class="k">方向键</td><td>微调选中图元 5 px（吸附步长）</td></tr>'+
+  '<tr><td class="k">Shift + 方向键</td><td>微调 1 px（精调，不吸附）</td></tr>'+
+  '<tr><td class="k">R / Shift + R</td><td>旋转选中图元 ±15°（开关站 = 上下镜像）</td></tr>'+
   '<tr><td class="k">Esc</td><td>关闭菜单 / 取消选中</td></tr>'+
+  '</table>'+
+  '<h4>视图 · 抓手</h4><table>'+
+  '<tr><td class="k">空格（按住）</td><td>临时切「小手」抓手模式，拖动画布平移；松手回到选择模式</td></tr>'+
+  '<tr><td class="k">缩放条「抓手」/ 视图菜单</td><td>锁定抓手模式（按钮变蓝），再按一次解锁</td></tr>'+
+  '<tr><td class="k">滚轮 / + / −</td><td>缩放画布（以光标为中心）</td></tr>'+
+  '<tr><td class="k">空白处拖动</td><td>平移画布（抓手模式下在图元上拖动也是平移）</td></tr>'+
+  '<tr><td class="k">F</td><td>适应窗口</td></tr>'+
+  '<tr><td class="k">Z</td><td>专注画布（隐藏两侧栏，再按恢复）</td></tr>'+
+  '<tr><td class="k">V / G</td><td>显示潮流箭头 / 主干辉光</td></tr>'+
+  '</table>'+
+  '<h4>演练 · 面板</h4><table>'+
+  '<tr><td class="k">1 / 2 / 3</td><td>① 模拟故障 / ② 隔离故障 / ③ 转供恢复（与按钮完全同源）</td></tr>'+
+  '<tr><td class="k">P</td><td>自动演示 播放 / 暂停</td></tr>'+
+  '<tr><td class="k">N</td><td>单步执行</td></tr>'+
+  '<tr><td class="k">0</td><td>复位运行方式</td></tr>'+
+  '<tr><td class="k">Tab</td><td>右栏「元件属性 ⇄ 动作过程」</td></tr>'+
+  '<tr><td class="k">[ / ]</td><td>左栏「元件库 / 网架结构 / 故障演练」前后翻页</td></tr>'+
+  '<tr><td class="k">F1 或 ?</td><td>打开本快捷键表</td></tr>'+
   '</table>'+
   '<h4>鼠标</h4><table>'+
   '<tr><td class="k">拖动图元</td><td>移动位置（5 px 吸附）</td></tr>'+
   '<tr><td class="k">拖动电缆</td><td>调整走线位置</td></tr>'+
   '<tr><td class="k">点击开关</td><td>分闸 / 合闸</td></tr>'+
   '<tr><td class="k">拖动端子</td><td>拉到另一个端子完成接线</td></tr>'+
-  '<tr><td class="k">右键</td><td>弹出图元 / 电缆菜单</td></tr></table>'); }
+  '<tr><td class="k">右键图元 / 电缆</td><td>菜单：复制 / 原地复制 / 粘贴 / 镜像 / 旋转 / 开关全合全分 / 设为故障点 / 重命名 / 删除</td></tr>'+
+  '<tr><td class="k">右键空白画布</td><td>菜单：粘贴到此处 / 适应窗口 / 潮流箭头 / 主干辉光 / 复位运行方式</td></tr>'+
+  '</table>'); }
 function showDoc(){ openDlg('接线约定 / 图元画法',
   '<h4>图元（与典型设计图一致）</h4><table>'+
   '<tr><td class="k">变电站</td><td><b>圆角方框</b> + <b>主变</b>（<b>双绕组变压器符号：两圆相交</b>，GB/T 4728.4；区别于自耦变的同心圆、电流互感器的穿心圆）+ <b>加粗 10 kV 母线</b> + 母线终端方块；同一段母线出 2 回馈线（间隔内含断路器，<b>合=实心 / 分=空心+「分」</b>），馈线末端为<b>电缆终端头</b>并标注示意性编号（如 变电站1出线1）。右键可<b>左右镜像</b>换向</td></tr>'+
@@ -2135,6 +2181,7 @@ document.getElementById('bOpenLocal').onclick=actOpenLocal;
 document.getElementById('bExportPng').onclick=actExportPng;
 document.getElementById('zIn').onclick=actZoomIn;
 document.getElementById('zOut').onclick=actZoomOut;
+document.getElementById('zPan').onclick=actPan;
 document.getElementById('zFit').onclick=actZoomFit;
 document.getElementById('zLv').onclick=actZoom100;
 var rSz=document.getElementById('rSz'), lSz=document.getElementById('lSz');
@@ -2148,6 +2195,32 @@ document.getElementById('fImport').onchange=function(e){
     catch(err){ fmsg('JSON 解析失败，请检查文件格式。'); } };
   r.readAsText(f); e.target.value=''; };
 
+/* ── 抓手模式：按住空格临时切换（松手恢复），「视图 → 抓手模式」或缩放条抓手按钮可锁定 ── */
+var SPACE=false, PAN_LOCK=false, SVGEL=document.getElementById('d');
+function panOn(){ return SPACE||PAN_LOCK; }
+function setPan(on){ if(SVGEL) SVGEL.classList.toggle('pan',!!on); }
+function actPan(){ PAN_LOCK=!PAN_LOCK; setPan(panOn());
+  var b=document.getElementById('zPan'); if(b) b.classList.toggle('on',PAN_LOCK);
+  syncMenu();
+  fmsg(PAN_LOCK?'抓手模式已锁定：拖动画布即平移（再点抓手按钮 / 按空格或「视图 → 抓手模式」解锁）。'
+               :'已解锁抓手模式（按住空格仍可临时平移）。'); }
+
+/* ── 方向键微调选中图元：方向键 = 5 px（吸附步长），Shift + 方向键 = 1 px 精调 ── */
+var NUDGE_T=0;
+function nudgeSel(dx,dy){
+  if(!SEL||SEL.kind!=='dev'||!DEV[SEL.id]){ fmsg('请先选中一个图元（变电站 / 开关站 / 配电房），再用方向键微调。'); return; }
+  var d=DEV[SEL.id], now=Date.now();
+  if(now-NUDGE_T>450){ push(); NUDGE_T=now; }
+  d.x+=dx; d.y+=dy;
+  if(d.type==='ld') d.moved=1;
+  else ORDER.forEach(function(kk){ var o=DEV[kk];
+    if(o.type==='ld'&&o.host===d.id){ o.x+=dx; o.y+=dy; o.moved=1; } });
+  refresh(); }
+
+/* ── 左栏页 / 右栏标签的键盘轮换 ── */
+var NAVS=['pal','topo','sim'];
+function navCycle(step){ var i=NAVS.indexOf(NAV_P); setNav(NAVS[(i+step+NAVS.length)%NAVS.length]); }
+
 document.addEventListener('keydown',function(e){
   var t=e.target, tag=((t&&t.tagName)||'').toLowerCase();
   if(tag==='input'||tag==='textarea'||tag==='select') return;
@@ -2157,13 +2230,36 @@ document.addEventListener('keydown',function(e){
   if(mod&&k==='v'){ e.preventDefault(); actPaste(); return; }
   if(mod&&k==='d'){ e.preventDefault(); actDup(); return; }
   if(mod&&k==='s'){ e.preventDefault(); actSaveLocal(); return; }
+  if(e.code==='Space'){ if(!e.repeat){ e.preventDefault(); SPACE=true; setPan(true); } return; }
   if(e.key==='Delete'||e.key==='Backspace'){ e.preventDefault(); actDelSel(); return; }
   if(e.key==='Escape'){ hideCtx(); closeMenu(); closeDlg(); return; }
+  if(e.key==='F1'||e.key==='?'){ e.preventDefault(); showKeys(); return; }
+  if(e.key==='Tab'){ e.preventDefault(); setRTab(RTAB==='sel'?'act':'sel'); return; }
+  /* 方向键：微调选中图元 */
+  if(e.key==='ArrowLeft'||e.key==='ArrowRight'||e.key==='ArrowUp'||e.key==='ArrowDown'){
+    e.preventDefault(); var st=e.shiftKey?1:5;
+    nudgeSel(e.key==='ArrowLeft'?-st:(e.key==='ArrowRight'?st:0),
+             e.key==='ArrowUp'?-st:(e.key==='ArrowDown'?st:0)); return; }
+  /* 演练：1 / 2 / 3 对应 ① ② ③，P 播放暂停，N 单步，0 复位 */
+  if(k==='1'){ document.getElementById('bFault').click(); return; }
+  if(k==='2'){ document.getElementById('bIso').click(); return; }
+  if(k==='3'){ document.getElementById('bRestore').click(); return; }
+  if(k==='p'){ document.getElementById('bPlay').click(); return; }
+  if(k==='n'){ document.getElementById('bStep').click(); return; }
+  if(k==='0'){ document.getElementById('bClearFault').click(); return; }
+  /* 左栏页 / 右栏标签 / 显示开关 */
+  if(k==='['||k===']'){ e.preventDefault(); navCycle(k===']'?1:-1); return; }
+  if(k==='v'){ actFlow(); return; }
+  if(k==='g'){ actGlow(); return; }
+  if(k==='z'){ actFocus(); return; }
   if(k==='+'||k==='='){ actZoomIn(); return; }
   if(k==='-'||k==='_'){ actZoomOut(); return; }
   if(k==='f'){ actZoomFit(); return; }
   if(k==='r'){ rotSel(e.shiftKey?-15:15); return; }
 });
+document.addEventListener('keyup',function(e){
+  if(e.code==='Space'){ SPACE=false; setPan(panOn()); } });
+window.addEventListener('blur',function(){ if(SPACE){ SPACE=false; setPan(panOn()); } });
 
 /* 拓扑模板列表（加载逻辑见 loadTopo） */
 var TOPO_LIST=[['petal2','双花瓣','两座变电站 · 两片花瓣 · 花瓣间联络'],
@@ -2184,7 +2280,9 @@ document.getElementById('topoList').addEventListener('click',function(ev){
 var CTX=document.getElementById('ctx'), CTXDEV=null, CTXWIRE=null;
 function openCtx(x,y,items,title){
   var h='<div class="hd">'+title+'</div>';
-  items.forEach(function(it){ h+='<button data-a="'+it.a+'"'+(it.cls?' class="'+it.cls+'"':'')+'>'+it.t+'</button>'; });
+  items.forEach(function(it){ if(it.a==='-'){ h+='<hr>'; return; }
+    h+='<button data-a="'+it.a+'"'+(it.cls?' class="'+it.cls+'"':'')+'><span>'+it.t+'</span>'+
+       (it.k?'<span class="k">'+it.k+'</span>':'')+'</button>'; });
   CTX.innerHTML=h; CTX.style.display='block';
   var w=CTX.offsetWidth||180, hh=CTX.offsetHeight||200;
   CTX.style.left=Math.max(6,Math.min(x,window.innerWidth-w-8))+'px';
@@ -2196,7 +2294,15 @@ CTX.addEventListener('click',function(ev){
   var a=b.dataset.a; hideCtx(); ctxAct(a);
 });
 document.addEventListener('mousedown',function(ev){ if(!CTX.contains(ev.target)) hideCtx(); });
+var CTXTHERE=null;
+function pasteAt(x,y){ if(!CLIP){ fmsg('剪贴板为空：先用 Ctrl+C 复制一个图元。'); return; }
+  var w=toWorldXY(x,y);
+  pasteClip(Math.round((w[0]-CLIP.ax)/5)*5, Math.round((w[1]-CLIP.ay)/5)*5); }
 function ctxAct(a){
+  if(a==='pasteHere'){ var pt=CTXTHERE; CTXTHERE=null; if(pt) pasteAt(pt[0],pt[1]); return; }
+  if(a==='copy'){ actCopy(); return; }
+  if(a==='dup'){ actDup(); return; }
+  if(a==='paste'){ actPaste(); return; }
   if(CTXDEV!=null){ var d=DEV[CTXDEV]; if(!d) return;
     if(a==='flip'){ push(); d.flip=d.flip?0:1; placeLoads(); paint(); }
     else if(a==='mirror'){ push(); d.rot=(d.rot%360===180)?0:180; paint(); }
@@ -3249,6 +3355,9 @@ window.__api={snap:snap,load:load,DEV:DEV,WIRES:WIRES,simulate:simulate,T:T,impa
   dev:function(){return DEV;},wires:function(){return WIRES;},
   TOPO:function(){return TOPO;},loadTopo:loadTopo,zoomFit:zoomFit,Z:function(){return Z;},
   sel:function(){return SEL;},selSet:function(k,id){SEL={kind:k,id:id};},copy:actCopy,paste:actPaste,zoomFit2:zoomFit,
+  pan:function(){ return {space:SPACE,lock:PAN_LOCK}; },panSet:function(on){ PAN_LOCK=!!on; setPan(panOn());
+    var b=document.getElementById('zPan'); if(b) b.classList.toggle('on',PAN_LOCK); },
+  nav:function(){ return NAV_P; },navSet:setNav,rtab:function(){ return RTAB; },rtabSet:setRTab,
   tp:tp,dirW:dirW,term:findTermObj,mode:function(){return {OUT:OUT,LOOP:LOOP};},
   applyModes:applyModes,actLoop:actLoop,paint:paint,ownerLabel:ownerLabel,
   status:sandboxStatus,stepCode:stepCode,addPalette:addPalette,wire:function(a,b){ push(); wire(a,b); paint(); }};
