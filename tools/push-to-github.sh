@@ -9,7 +9,8 @@
 #   # ② 连仓库都没有——给一个 Token，脚本替你建（私有仓库）
 #   tools/push-to-github.sh --create <user>/<repo> <TOKEN> [public]
 #
-# 说明：本机没有保存任何 GitHub 凭据；Token 只在本条命令里用一次，不落盘。
+# 说明：本机没有保存任何 GitHub 凭据。Token 只在本次命令里用一次；
+#      推送结束后脚本会把 origin 改写成不含 Token 的地址，Token 不会留在 .git/config。
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
@@ -50,6 +51,13 @@ echo "· 推送主干 main";            git push -u origin main
 echo "· 推送全部备份 / 特性分支";  git push origin --all
 echo "· 推送全部标签（含 v*）";    git push origin --tags
 
+# 推送完成后，把 origin 里的 Token 抹掉（不留在 .git/config）
+CLEAN=$(printf '%s' "$URL" | sed -E 's#(https://)[^@/]*@#\1#')
+if [ "$CLEAN" != "$URL" ]; then
+  git remote set-url origin "$CLEAN"
+  echo "· origin 已改写为不含 Token 的地址：$CLEAN"
+fi
+
 echo
 echo "完成。远端分支与标签："
-git ls-remote --heads --tags origin | sed -E 's#(https://)[^@]*@#\1***@#' | sed 's/^/  /'
+git ls-remote --heads --tags origin 2>/dev/null | sed 's/^/  /' || true

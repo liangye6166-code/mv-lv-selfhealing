@@ -202,7 +202,7 @@ tools/push-to-github.sh --create <user>/<repo> <TOKEN>          # 私有
 tools/push-to-github.sh --create <user>/<repo> <TOKEN> public   # 公开
 ```
 
-- Token 只需 **classic PAT 的 `repo` 权限**（脚本只用来建仓库 / 推送，不落盘、不回显）。
+- Token 只需 **classic PAT 的 `repo` 权限**（脚本只用来建仓库 / 推送；推送完成后 origin 会改写成**不含 Token** 的地址，Token 不会留在 `.git/config`，也不回显）。
 - 也可以用 SSH：把本机公钥（`~/.ssh/id_ed25519.pub`）加到 GitHub → Settings → SSH keys，
   再用 `git@github.com:<user>/<repo>.git` 推送。
 - 本地只推 `main` / `--all` / `--tags`，不修改任何提交历史。
