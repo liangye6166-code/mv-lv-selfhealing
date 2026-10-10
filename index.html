@@ -424,7 +424,7 @@
       <div class="pane box">
         <b>元件库 <span class="tlstate">拖入画布 · 或点击加入</span></b>
         <div class="palette" id="palette">
-          <button class="pitem" data-k="sub" draggable="true" title="10 kV 电源（主变 + 粗母线 + 出线间隔）">
+          <button class="pitem" data-k="sub" draggable="true" title="10 kV 电源（主变 + 加粗母线 + 出线间隔）">
             <svg viewBox="0 0 40 26" aria-hidden="true">
               <rect x="1.5" y="2.5" width="30" height="21" rx="3" fill="#f5f8fc" stroke="#334155" stroke-width="1.4"/>
               <line x1="8" y1="3.5" x2="8" y2="22.5" stroke="#334155" stroke-width="3"/>
@@ -552,7 +552,7 @@ var SVG=document.getElementById('d');
 var COL={a:'#1d4ed8',b:'#0d9488',tie:'#e8590c',ink:'#12263f',muted:'#5b7083',
          sub:'#334155',live:'#0f8a4a',cur:'#2f9e63',dead:'#8e9dae',open:'#e8590c',
          aLite:'#dbe7ff',bLite:'#d5f0ea',flt:'#e03131',sel:'#0f172a'};
-var TYPE={sub:'变电站（10 kV 电源：圆角方框 + 主变示意 + 粗母线 + 出线间隔）',
+var TYPE={sub:'变电站（10 kV 电源：圆角方框 + 主变（两圆相交）+ 粗母线 + 出线间隔）',
   sta:'开关站（单母线分段环网柜：Ⅰ/Ⅱ段母线 + 母联；每段 2 回用户出线 + 2 回环网间隔）',
   ld:'配电房（用户负荷，单电源）'};
 var SZ=.80, LDN=0;                /* 配电房示意编号计数器 */                     /* 图元统一缩放（变电站保持 1） */
@@ -595,8 +595,8 @@ function liveOf(id){ var d=DEV[id];
   return (d&&d.type==='sta')?!!(EN[id+':b1']||EN[id+':b2']):!!EN[id+':bus']; }
 function secLive(id,sec){ var d=DEV[id];
   return (d&&d.type==='sta')?!!EN[id+':b'+sec]:!!EN[id+':bus']; }
-/* 变电站：外壳 + 主变示意（双圆）+ 10 kV 粗母线 + 出线间隔。
-   内部构件按 s=±1 镜像：母线在 -22*s、主变在 -58*s、出线朝 tx 一侧引出 */
+/* 变电站：外壳 + 主变（双绕组变压器符号：两圆相交）+ 10 kV 粗母线 + 出线间隔。
+   内部构件按 s=±1 镜像：母线在 -22*s、主变在 -54*s、出线朝 tx 一侧引出 */
 function subBusX(d){ var t=d.terms&&d.terms[0]; return -22*((t&&t.tx>0)?1:-1); }
 function subTerms(mir,y1,y2,ln){ var s=mir?-1:1;
   if(y1===undefined) y1=-16; if(y2===undefined) y2=16; ln=ln||[];
@@ -1478,10 +1478,15 @@ function render(){
       var sp0=EN[id+':bus'], c0=sp0?COL.sub:COL.dead;
       g.appendChild(el('rect',{x:-84,y:-74,width:168,height:148,rx:7,
         fill:'#f5f8fc',stroke:COL.sub,'stroke-width':2}));
-      ln(g,-84*sgn,0,-75*sgn,0,c0,4);                      /* 上级进线（示意） */
-      g.appendChild(el('circle',{cx:-58*sgn,cy:0,r:17,fill:'#fff',stroke:c0,'stroke-width':2}));
-      g.appendChild(el('circle',{cx:-58*sgn,cy:0,r:10.5,fill:'none',stroke:c0,'stroke-width':1.3}));
-      ln(g,-41*sgn,0,busX,0,c0,3);                         /* 主变 → 母线 */
+      /* 主变 = **双绕组变压器**符号：两个**相交**的圆（GB/T 4728.4 / IEC 60617）。
+         注意：同心双圆读作“自耦变压器”，套在线上还易与穿心式电流互感器混淆，故不采用 */
+      var trX=-54*sgn, trR=12, trD=8.5;
+      ln(g,-84*sgn,0,-74.5*sgn,0,c0,4);                    /* 上级进线（示意） */
+      g.appendChild(el('circle',{cx:trX-trD*sgn,cy:0,r:trR,fill:'#fff',stroke:'none'}));
+      g.appendChild(el('circle',{cx:trX+trD*sgn,cy:0,r:trR,fill:'#fff',stroke:'none'}));
+      g.appendChild(el('circle',{cx:trX-trD*sgn,cy:0,r:trR,fill:'none',stroke:c0,'stroke-width':1.8}));
+      g.appendChild(el('circle',{cx:trX+trD*sgn,cy:0,r:trR,fill:'none',stroke:c0,'stroke-width':1.8}));
+      ln(g,-33.5*sgn,0,busX,0,c0,3);                       /* 主变 → 10 kV 母线 */
       ln(g,busX,-58,busX,58,c0,8);                         /* 10 kV 母线（加粗） */
       circ(g,busX,-58,4.5,c0); busTerm(g,busX,58,c0);
       d.terms.forEach(function(t){
@@ -1535,6 +1540,8 @@ function render(){
     if(d.type==='sub'){
       txt(gL,d.x,d.y-102,d.name,{size:12.5,weight:700,fill:COL.sub,spacing:.4,halo:4});
       txt(gL,d.x,d.y-86,'10 kV 母线（电源）',{size:10,fill:COL.muted});
+      var sg=(d.terms[0]&&d.terms[0].tx>0)?1:-1, tlp=xf(d,-54*sg,27);
+      txt(gL,tlp[0],tlp[1],'主变',{size:9,fill:COL.muted,halo:3});
     }
   });
   (TOPO.badges||[]).forEach(function(b){
@@ -2019,7 +2026,7 @@ function showKeys(){ openDlg('快捷键一览',
   '<tr><td class="k">右键</td><td>弹出图元 / 电缆菜单</td></tr></table>'); }
 function showDoc(){ openDlg('接线约定 / 图元画法',
   '<h4>图元（与典型设计图一致）</h4><table>'+
-  '<tr><td class="k">变电站</td><td><b>圆角方框</b> + <b>主变示意（双圆）</b> + <b>加粗 10 kV 母线</b> + 母线终端方块；同一段母线出 2 回馈线（间隔内含断路器，<b>合=实心 / 分=空心+「分」</b>），馈线末端为<b>电缆终端头</b>并标注示意性编号（如 变电站1出线1）。右键可<b>左右镜像</b>换向</td></tr>'+
+  '<tr><td class="k">变电站</td><td><b>圆角方框</b> + <b>主变</b>（<b>双绕组变压器符号：两圆相交</b>，GB/T 4728.4；区别于自耦变的同心圆、电流互感器的穿心圆）+ <b>加粗 10 kV 母线</b> + 母线终端方块；同一段母线出 2 回馈线（间隔内含断路器，<b>合=实心 / 分=空心+「分」</b>），馈线末端为<b>电缆终端头</b>并标注示意性编号（如 变电站1出线1）。右键可<b>左右镜像</b>换向</td></tr>'+
   '<tr><td class="k">开关站</td><td><b>单母线分段环网柜</b>（不旋转，可上下镜像）：Ⅰ段母线（蓝）与 Ⅱ段母线（青）共线横置，中间为<b>母联</b>（分段开关：横置长条方框，空心=分位、实心=合位）；母线外端为<b>母线终端</b>（端头实心方块）。每段母线 4 个间隔：<b>2 回用户出线（朝外）+ 2 回环网间隔（朝内，一进一出）</b>。断路器<b>实心=合位、空心=分位</b></td></tr>'+
   '<tr><td class="k">配电房（负荷）</td><td><b>每一回用户出线间隔 = 一个独立负荷</b>，各画<b>一个三角形</b>（顶点背向开关站、单电源）；符号取所属母线段颜色（Ⅰ 段蓝 / Ⅱ 段青），<b>该回路失电即转灰</b></td></tr>'+
   '<tr><td class="k">终端</td><td><b>电缆终端头</b>=电缆末端的端子（白环 + 实心圆）；<b>母线终端</b>=母线末端的实心小方块（端头封堵）</td></tr>'+
