@@ -7,13 +7,17 @@
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%231d4ed8'/%3E%3Ccircle cx='11' cy='16' r='4.6' fill='none' stroke='%23fff' stroke-width='2.2'/%3E%3Ccircle cx='21' cy='16' r='4.6' fill='none' stroke='%230d9488' stroke-width='2.2'/%3E%3C/svg%3E">
 <style>
   :root{--ink:#12263f;--muted:#5b7083;--a:#1d4ed8;--b:#0d9488;--tie:#e8590c;
-        --sub:#334155;--flt:#e03131;--bg:#eaeff6;--live:#0f8a4a;--dead:#8e9dae;--line:#e6ebf2;}
+        --sub:#334155;--flt:#e03131;--bg:#eaeff6;--live:#0f8a4a;--dead:#8e9dae;--line:#e6ebf2;
+        /* ── IDE 壳层主题令牌（亮色默认） ── */
+        --accent:#0078d4;
+        --bg-app:#f3f3f3;--bg-sidebar:#ffffff;--bg-canvas:#eaeff6;--bg-elev:#ffffff;
+        --fg:#12263f;--fg-dim:#5b7083;--border:#d7dfe9;--control:#f8fafc;--control-hover:#eef3fa;}
   *{box-sizing:border-box}
   html,body{height:100%;margin:0}
-  body{background:var(--bg);color:var(--ink);overflow:hidden;
+  body{background:var(--bg-app);color:var(--fg);overflow:hidden;
     font:13px/1.55 -apple-system,"PingFang SC","Hiragino Sans GB","Noto Sans CJK SC",system-ui,sans-serif}
-  .pane{background:#fff;border-radius:13px;box-shadow:0 6px 20px rgba(18,38,63,.09)}
-  .app{height:100dvh;display:flex;flex-direction:column;gap:9px;padding:11px 13px}
+  .pane{background:var(--bg-sidebar);border-radius:13px;box-shadow:0 6px 20px rgba(18,38,63,.09)}
+  .app{height:100dvh;display:flex;flex-direction:column;gap:0;padding:0;overflow:hidden}
   .topbar{padding:9px 15px 10px;display:flex;flex-direction:column;gap:8px}
   .hdr{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
   h1{margin:0;font-size:16px;font-weight:600;letter-spacing:.3px;display:flex;align-items:center;gap:9px;white-space:nowrap}
@@ -44,14 +48,15 @@
   .ctl input[type=range]{width:104px;accent-color:#1d4ed8}
   .ctl b{color:var(--ink);font-size:12px;min-width:32px;text-align:right}
   .hint{color:var(--muted);font-size:11.5px;margin-left:auto;white-space:nowrap}
-  .mid{flex:1;min-height:0;display:grid;grid-template-columns:340px minmax(0,1fr) 338px;gap:9px}
-  .mid.focus{grid-template-columns:minmax(0,1fr)}
-  .mid.focus .side{display:none}
-  .side{display:flex;flex-direction:column;gap:9px;min-height:0;overflow:auto;padding-right:2px}
+  .mid{flex:1;min-height:0;display:flex;gap:0;background:var(--bg-app);--wl:340px;--wr:338px}
+  .mid.focus .side,.mid.focus .splitter{display:none}
+  .side{display:flex;flex-direction:column;gap:9px;min-height:0;overflow:auto;padding:8px 2px 8px 8px}
+  .side.sider{flex:0 0 var(--wr)}
+  .side.sidenav{flex:0 0 var(--wl)}
   .side::-webkit-scrollbar{width:8px}
   .side::-webkit-scrollbar-thumb{background:#d3dce7;border-radius:4px}
   /* ── 左栏：竖向图标导航（元件库 / 网架结构 / 故障演练） ── */
-  .side.sidenav{flex-direction:column;gap:0;padding:0;overflow:hidden}
+  .side.sidenav{flex-direction:column;gap:0;padding:6px 6px 6px 8px;overflow:hidden}
   .navwrap{flex:1;min-height:0;display:flex;align-items:stretch}
   .rail{flex:0 0 48px;display:flex;flex-direction:column;gap:4px;padding:7px 4px;
     background:linear-gradient(180deg,#f7fafd,#eaf0f8);border:1px solid var(--line);border-right:0;
@@ -92,8 +97,8 @@
   .box>b{display:flex;align-items:center;gap:7px;margin:0 0 9px;padding-bottom:6px;
     font-size:13.5px;font-weight:600;color:var(--ink);border-bottom:1px solid #eef1f6}
   .box>b .tlstate{margin-left:auto;font-size:11px;font-weight:500;color:var(--muted)}
-  .stage{padding:7px;display:flex;min-height:0}
-  svg.d{flex:1;width:100%;height:100%;min-height:0;display:block;background:#fdfeff;
+  .stage{padding:8px;display:flex;min-height:0;flex:1 1 auto;min-width:0}
+  svg.d{flex:1;width:100%;height:100%;min-height:0;display:block;background:var(--bg-canvas);
     border:1px solid var(--line);border-radius:9px;touch-action:none;user-select:none;cursor:default}
   svg.d.pan{cursor:grab}                      /* 空格 / 抓手模式：小手 */
   svg.d.pan *{cursor:inherit!important}       /* 抓手模式下连图元上也显示小手 */
@@ -116,7 +121,7 @@
   .stage.dropping{outline:2px dashed #1d4ed8;outline-offset:-5px}
 
   /* ── 菜单栏 ── */
-  .menubar{padding:6px 12px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .menubar{padding:5px 12px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;min-height:clamp(2rem,2.5vw,2.25rem)}
   .brand{display:flex;align-items:center;gap:8px;font-size:14px;font-weight:700;white-space:nowrap;
     letter-spacing:.2px}
   .brand::before{content:'';width:4px;height:16px;border-radius:2px;background:linear-gradient(180deg,#1d4ed8,#0d9488)}
@@ -228,14 +233,14 @@
   .topos button.cur small{color:#b9c9dd}
 
   /* ── 工作台自适应：中小屏自动收窄侧栏、压缩顶栏，保证一屏放得下 ── */
-  @media (max-width:1680px){ .mid{grid-template-columns:316px minmax(0,1fr) 312px} }
+  @media (max-width:1680px){ .mid{--wl:316px;--wr:312px} }
   @media (max-width:1500px){
-    .mid{grid-template-columns:298px minmax(0,1fr) 292px}
+    .mid{--wl:298px;--wr:292px}
     .box{padding:9px 11px}
     .legend{grid-template-columns:1fr;gap:5px}
     .legend span{font-size:10.5px}
   }
-  @media (max-width:1330px){ .mid{grid-template-columns:276px minmax(0,1fr) 264px} .hint{display:none} }
+  @media (max-width:1330px){ .mid{--wl:276px;--wr:264px} .hint{display:none} }
   @media (max-height:880px){
     .app{gap:7px;padding:9px 11px}
     .topbar{padding:7px 12px 8px;gap:6px}
@@ -356,7 +361,8 @@
   .cvlegend svg{flex:0 0 auto}
 
   /* ══ 底部状态栏：只放芯片 ══ */
-  .foot{padding:8px 14px;display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+  .foot{padding:6px 12px;display:flex;gap:10px;align-items:center;flex-wrap:nowrap;overflow-x:auto;
+    -webkit-overflow-scrolling:touch;font-size:12px;min-height:clamp(1.5rem,2.2vw,2.1rem)}
   .foot .chkbox{display:flex;gap:6px;align-items:center;flex-wrap:wrap;min-width:0}
   .foot .chkbox>b{font-size:11px;color:var(--muted);font-weight:700;letter-spacing:.4px;white-space:nowrap}
   .foot .msg{color:var(--muted);font-size:11.5px;min-width:0;overflow:hidden;text-overflow:ellipsis;
@@ -368,11 +374,11 @@
 
   /* 小笔记本 / 平板横屏：收窄两侧栏 */
   @media (max-width:1360px){
-    .mid{grid-template-columns:310px minmax(0,1fr) 308px}
+    .mid{--wl:310px;--wr:308px}
   }
   @media (max-width:1180px){
     .app{padding:9px 10px;gap:7px}
-    .mid{grid-template-columns:278px minmax(0,1fr) 282px;gap:7px}
+    .mid{--wl:278px;--wr:282px}
     .box{padding:9px 11px}
     h1{font-size:15px}
     .scnlist{max-height:186px}
@@ -402,6 +408,7 @@
     #hint{display:none}
     /* 侧栏 → 抽屉 */
     .mid{display:block;position:relative}
+    .mid>.splitter{display:none}
     .mid>.stage{height:100%}
     .mid>.side{display:flex;position:fixed;top:0;bottom:0;left:0;width:min(86vw,326px);z-index:84;
       padding:calc(10px + env(safe-area-inset-top)) 10px 12px;background:var(--bg);gap:8px;
@@ -440,6 +447,154 @@
   .rotcard button.ghost{background:none;border-color:#3c5a86;color:#b9cbe6}
   .rotcard button.ghost:hover{background:rgba(255,255,255,.06);border-color:#5a7cae}
   @media (max-width:900px) and (orientation:portrait){ .rotmask.on{display:flex} }
+  /* ══════════ IDE 壳层：上标题 / 中三栏 / 下状态 ══════════ */
+  .menubar{background:var(--bg-app);border-radius:0;box-shadow:none;border-bottom:1px solid var(--border)}
+  .foot{background:var(--bg-app);border-radius:0;box-shadow:none;border-top:1px solid var(--border)}
+  .tbright{margin-left:auto}
+  .tbright .hint{margin-left:0}
+  .foot .tbmid{margin:0;flex:0 0 auto;flex-wrap:nowrap}
+  .fstat{display:flex;gap:6px;align-items:center;flex:0 0 auto;margin-left:auto}
+  .foot .chkbox,.foot .tags,.foot .chks{flex-wrap:nowrap}
+  .foot>.chkbox,.foot>.tbmid,.foot>.fstat{flex:0 0 auto}
+  .foot>.msg{flex:1 1 auto;min-width:150px}
+  .foot>.fstat{position:sticky;right:0;background:var(--bg-app);
+    box-shadow:-9px 0 9px -7px rgba(18,38,63,.22)}
+  .schip{border:1px solid var(--border);background:var(--control);border-radius:999px;padding:2px 9px;
+    font-size:11px;color:var(--fg-dim);white-space:nowrap;font-variant-numeric:tabular-nums}
+  .themeseg{display:inline-flex;border:1px solid var(--border);border-radius:8px;overflow:hidden;background:var(--control)}
+  .themeseg button{border:0;border-radius:0;background:none;padding:4px 9px;font-size:12px;color:var(--fg-dim)}
+  .themeseg button+button{border-left:1px solid var(--border)}
+  .themeseg button.on{background:var(--accent);color:#fff;font-weight:600}
+  /* 分隔条：可拖宽；热区 8px，触控友好 */
+  .splitter{flex:0 0 8px;position:relative;z-index:6;touch-action:none;display:flex;align-items:center;
+    justify-content:center;background:var(--bg-app)}
+  .splitter::before{content:'';position:absolute;top:0;bottom:0;left:3px;width:2px;border-radius:2px;
+    background:var(--border);transition:background .12s}
+  .splitter:hover::before,.splitter.drag::before{background:var(--accent)}
+  .splitter .spcol{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:18px;height:36px;
+    padding:0;border:1px solid var(--border);border-radius:6px;background:var(--bg-sidebar);
+    color:var(--fg-dim);font-size:12px;line-height:1;cursor:pointer;opacity:0;transition:opacity .12s;
+    display:flex;align-items:center;justify-content:center}
+  .splitter:hover .spcol{opacity:1}
+  @media (hover:none) and (pointer:coarse){
+    .rail .rb{padding:10px 1px 9px}
+    .mobbtn,#bLoop,#bOut{padding:7px 11px}
+    .rtabs .rtb{padding:9px 8px}
+    .themeseg button{padding:7px 11px}
+    .splitter{flex:0 0 13px}
+  }
+  @media (min-width:901px){
+    .mid.lcol>.side.sidenav{display:none}
+    .mid.rcol>.side.sider{display:none}
+    .mid.lcol>.spL::before,.mid.rcol>.spR::before{background:var(--accent);opacity:.55}
+    .mid.lcol>.spL .spcol,.mid.rcol>.spR .spcol{opacity:1}
+  }
+  /* 平板 768–1199：右栏改抽屉，左栏保留 */
+  @media (min-width:901px) and (max-width:1199px){
+    #bPanelR{display:inline-flex;align-items:center;gap:4px;padding:4px 9px;font-size:12px;font-weight:600}
+    .mid>.side.sider{position:fixed;top:0;bottom:0;right:0;width:min(86vw,340px);z-index:84;flex:none;
+      padding:calc(10px + env(safe-area-inset-top)) 10px 12px;background:var(--bg-app);gap:8px;
+      overflow:auto;border-radius:14px 0 0 14px;box-shadow:0 12px 40px rgba(18,38,63,.28);
+      transform:translateX(105%);transition:transform .22s ease}
+    .mid>.side.sider.open{transform:none}
+    .mid>.spR{display:none}
+    .mid>.side.sider .drawerx{display:block}
+    .mask{display:none;position:fixed;inset:0;z-index:83;padding:0;border:0;border-radius:0;
+      background:rgba(18,38,63,.36)}
+    .mask.on{display:block}
+  }
+
+  /* ══════════ 暗色主题 ══════════ */
+  [data-theme="dark"]{
+    --ink:#e6edf5;--muted:#9aa7b6;--sub:#c3cdda;--line:#333a44;--bg:#171a1f;
+    --bg-app:#1e1e1e;--bg-sidebar:#252526;--bg-canvas:#171a1f;--bg-elev:#2a2d31;
+    --fg:#e6edf5;--fg-dim:#9aa7b6;--border:#3a4048;--control:#2a2d31;--control-hover:#33383e;
+    --live:#3ecf8e;--flt:#ff6b6b;--tie:#f08c3a;--dead:#6b7b8d;
+  }
+  [data-theme="dark"] .pane{background:var(--bg-sidebar);box-shadow:0 2px 10px rgba(0,0,0,.4)}
+  [data-theme="dark"] .menubar,[data-theme="dark"] .foot{background:var(--bg-app);box-shadow:none}
+  [data-theme="dark"] button,[data-theme="dark"] select{background:var(--control);border-color:var(--border);color:var(--fg)}
+  [data-theme="dark"] button:hover{background:var(--control-hover);border-color:#4a525c}
+  [data-theme="dark"] .mnu{color:#c3cdda}
+  [data-theme="dark"] .mnu:hover{background:#33383e}
+  [data-theme="dark"] .mnu.on{background:#0d5fb0;border-color:#0d5fb0;color:#fff}
+  [data-theme="dark"] .brand em,[data-theme="dark"] .sub{color:var(--muted)}
+  [data-theme="dark"] .tag{background:#2a2d31;border-color:#3a4048;color:var(--muted)}
+  [data-theme="dark"] .tag b{color:var(--fg)}
+  [data-theme="dark"] .tag.ok{background:#12301f;border-color:#1e5238;color:#7fd6a5}
+  [data-theme="dark"] .tag.ok b{color:#9fe7bd}
+  [data-theme="dark"] .tag.bad{background:#37191b;border-color:#5b2a2c;color:#ef8f8f}
+  [data-theme="dark"] .tag.bad b{color:#ffb3b3}
+  [data-theme="dark"] .tag.warn{background:#3a2a15;border-color:#5e451f;color:#e3b06a}
+  [data-theme="dark"] .tag.warn b{color:#f0c78a}
+  [data-theme="dark"] .tag.act{background:#152a44;border-color:#254a75;color:#8fb6ea}
+  [data-theme="dark"] .tag.act b{color:#b7d2f5}
+  [data-theme="dark"] .sep{background:var(--border)}
+  [data-theme="dark"] .rail{background:linear-gradient(180deg,#26282c,#22252a);border-color:var(--border)}
+  [data-theme="dark"] .rail .rb{color:#9aa7b6}
+  [data-theme="dark"] .rail .rb:hover{background:#33383e;color:#7fb0f5}
+  [data-theme="dark"] .rail .rb.on{background:#33383e;color:#7fb0f5;box-shadow:none}
+  [data-theme="dark"] .rtabs{background:#2a2d31;border-color:var(--border)}
+  [data-theme="dark"] .rtabs .rtb{color:#9aa7b6}
+  [data-theme="dark"] .rtabs .rtb:hover{background:#33383e;color:#7fb0f5}
+  [data-theme="dark"] .rtabs .rtb.on{background:#3a3d41;color:var(--fg);box-shadow:none}
+  [data-theme="dark"] .side::-webkit-scrollbar-thumb,[data-theme="dark"] .railbody::-webkit-scrollbar-thumb,
+  [data-theme="dark"] .rtbody::-webkit-scrollbar-thumb{background:#3f454d}
+  [data-theme="dark"] .box>b,[data-theme="dark"] .rtabp .thead{border-bottom-color:var(--line)}
+  [data-theme="dark"] .pitem{background:#2a2d31;border-color:#3a4048}
+  [data-theme="dark"] .pitem:hover{background:#33383e}
+  [data-theme="dark"] .menu,[data-theme="dark"] .ctx{background:#2a2d31;border-color:#3a4048;
+    box-shadow:0 12px 30px rgba(0,0,0,.5)}
+  [data-theme="dark"] .menu button,[data-theme="dark"] .ctx button{color:var(--fg)}
+  [data-theme="dark"] .menu button:hover,[data-theme="dark"] .ctx button:hover{background:#33383e}
+  [data-theme="dark"] .menu button.on{background:#33383e}
+  [data-theme="dark"] .menu .hd,[data-theme="dark"] .ctx .hd{border-bottom-color:var(--line)}
+  [data-theme="dark"] .menu hr,[data-theme="dark"] .ctx hr{border-top-color:var(--line)}
+  [data-theme="dark"] .dlgbox{background:#252526}
+  [data-theme="dark"] .dlgbody code,[data-theme="dark"] .sub code{background:#33383e;color:#c3cdda}
+  [data-theme="dark"] .saveitem{border-bottom-color:var(--line)}
+  [data-theme="dark"] .zoombar,[data-theme="dark"] .cvlegend{background:rgba(37,37,38,.95);
+    border-color:var(--border);color:var(--muted);box-shadow:0 5px 16px rgba(0,0,0,.4)}
+  [data-theme="dark"] .zoombar button{color:#c3cdda}
+  [data-theme="dark"] .zoombar button:hover{background:#33383e}
+  [data-theme="dark"] .scnlist{background:#22252a;border-color:var(--border)}
+  [data-theme="dark"] .scngp{background:#2a2d31;color:#9aa7b6}
+  [data-theme="dark"] .scnrow{color:#c3cdda}
+  [data-theme="dark"] .scnrow:hover{background:#33383e}
+  [data-theme="dark"] .scnrow.cur{background:#2b3a52}
+  [data-theme="dark"] .scnfull{background:#2a2d31;border-color:var(--border);color:#c3cdda}
+  [data-theme="dark"] .topos button.cur{background:var(--accent);border-color:var(--accent)}
+  [data-theme="dark"] .modecap{background:#2a2d31;border-color:var(--border)}
+  [data-theme="dark"] .modecap b{color:var(--fg)}
+  [data-theme="dark"] .foot .msg{color:#c3cdda}
+  [data-theme="dark"] .chks .al{background:#2a2d31;border-color:var(--border)}
+  [data-theme="dark"] .chks .al.ok{background:#12301f;border-color:#1e5238;color:#7fd6a5}
+  [data-theme="dark"] .chks .al.warn{background:#3a2a15;border-color:#5e451f;color:#e3b06a}
+  [data-theme="dark"] .chks .al.bad{background:#37191b;border-color:#5b2a2c;color:#ef8f8f}
+  [data-theme="dark"] .act .sts .tt{color:var(--fg-dim)}
+  [data-theme="dark"] .act .sts .dd::before{background:var(--bg-sidebar);border-color:#4a525c}
+  [data-theme="dark"] .act .sts:not(:last-child) .dd::after{background:var(--border)}
+  [data-theme="dark"] .act .sts .tx{color:var(--muted)}
+  [data-theme="dark"] .tl .tld{background:var(--bg-sidebar);border-color:#4a525c}
+  [data-theme="dark"] .tl .tli:not(:last-child)::before{background:var(--border)}
+  [data-theme="dark"] .tl .tli.on .tln{color:var(--fg)}
+  [data-theme="dark"] .kv i{color:var(--fg)}
+  [data-theme="dark"] .row input[type=text],[data-theme="dark"] textarea{background:#2a2d31;
+    border-color:var(--border);color:var(--fg)}
+  [data-theme="dark"] .sw{border-bottom-color:var(--line)}
+  [data-theme="dark"] .swhd{color:#8a99ab;border-bottom-color:var(--line)}
+  [data-theme="dark"] .sw .bdg.on{background:#12301f;border-color:#1e5238;color:#7fd6a5}
+  [data-theme="dark"] .sw .bdg.off{background:#3a2a15;border-color:#5e451f;color:#e3b06a}
+  [data-theme="dark"] .drawerx{background:#33383e;color:#c3cdda}
+  [data-theme="dark"] .dlgbody{color:#c3cdda}
+  [data-theme="dark"] .dlgbody td.k,[data-theme="dark"] .dlgbody th{color:var(--fg)}
+  [data-theme="dark"] .pitem.pick{background:#1e3a5f;border-color:#3f7fd0}
+  [data-theme="dark"] .scnrow b{color:#7fb0f5}
+  [data-theme="dark"] .bad,[data-theme="dark"] .foot .t{color:#ff8b8b}
+  [data-theme="dark"] .warn{color:#e3b06a}
+  [data-theme="dark"] .act .ft{color:#c3cdda}
+  [data-theme="dark"] .mask{background:rgba(0,0,0,.55)}
+
 </style>
 </head>
 <body>
@@ -454,16 +609,16 @@
       <button class="mnu" data-m="drill">演练</button>
       <button class="mnu" data-m="help">帮助</button>
     </nav>
-    <span class="tbmid">
-      <span class="modecap" id="modeCap" title="当前运行方式：由环网开关与母联的真实位置计算"><i></i>运行方式 <b id="modeCapT">合环运行</b></span>
-      <button id="bLoop" class="mini" title="环网闭环 / 开环">环网闭环</button>
-      <button id="bOut" class="mini" title="开关站母联：常开 = 两段互为备用；常合 = 两段并列运行">母联常开</button>
-    </span>
     <span class="tbright">
-      <button class="mobbtn" id="bPanelR" title="元件属性 / 动作过程">⚙ 属性</button>
       <span class="hint" id="hint"></span>
       <span class="ctl" title="符号比例：只缩放图元符号，不改变画布缩放">符号比例
         <input type="range" id="rSz" min="55" max="130" step="5" value="80"><b id="lSz" class="num">80%</b></span>
+      <button class="mobbtn" id="bPanelR" title="元件属性 / 动作过程">⚙ 属性</button>
+      <span class="themeseg" id="themeSeg" role="group" aria-label="主题（亮色 / 暗色 / 跟随系统）">
+        <button type="button" data-th="light" title="亮色">亮</button>
+        <button type="button" data-th="dark" title="暗色">暗</button>
+        <button type="button" data-th="auto" title="跟随系统">跟随</button>
+      </span>
     </span>
   </header>
 
@@ -577,6 +732,8 @@
 
     </aside>
 
+    <div class="splitter spL" id="spL" title="拖动调整宽度 · 双击折叠左栏"><button type="button" class="spcol" id="colL" title="折叠 / 展开左栏">‹</button></div>
+
     <section class="stage pane">
       <svg class="d" id="d" viewBox="50 60 1500 780" xmlns="http://www.w3.org/2000/svg"></svg>
       <div class="cvlegend" id="cvLegend">
@@ -596,6 +753,8 @@
       </div>
     </section>
 
+    <div class="splitter spR" id="spR" title="拖动调整宽度 · 双击折叠右栏"><button type="button" class="spcol" id="colR" title="折叠 / 展开右栏">›</button></div>
+
     <aside class="side sider" id="sideR">
       <button class="drawerx" id="xR">✕ 收起面板</button>
       <div class="rtabs" id="rtabs" role="tablist" aria-label="右栏内容（元件属性 / 动作过程）">
@@ -613,9 +772,19 @@
   </div>
 
   <footer class="pane foot">
+    <span class="tbmid">
+      <span class="modecap" id="modeCap" title="当前运行方式：由环网开关与母联的真实位置计算"><i></i>运行方式 <b id="modeCapT">合环运行</b></span>
+      <button id="bLoop" class="mini" title="环网闭环 / 开环">环网闭环</button>
+      <button id="bOut" class="mini" title="开关站母联：常开 = 两段互为备用；常合 = 两段并列运行">母联常开</button>
+    </span>
     <div class="chkbox"><span class="tags" id="tags"></span></div>
     <span class="msg" id="faultMsg">选择场景后点“自动演示”，或先选中电缆 / 开关站再点 ①。</span>
     <div class="chkbox"><b>校验 / 告警</b><span class="chks" id="pChk"></span></div>
+    <span class="fstat">
+      <span class="schip" id="sZoom" title="画布缩放">100%</span>
+      <span class="schip" id="sDev" title="图元数 / 连线数">0 / 0</span>
+      <span class="schip" id="sTheme" title="当前主题">亮色</span>
+    </span>
   </footer>
 </div>
 
@@ -1227,7 +1396,7 @@ function circ(g,x,y,r,s,extra){ var o={cx:x,cy:y,r:r,fill:s};
 function ptsStr(p){ return num(p[0])+' '+num(p[1]); }
 function txt(g,x,y,s,o){ o=o||{}; var t=el('text',{x:x,y:y,
     'text-anchor':o.anchor||'middle','font-size':o.size||12,'font-weight':o.weight||400,
-    fill:o.fill||COL.ink,stroke:'#fff','stroke-width':o.halo==null?4:o.halo,
+    fill:o.fill||COL.ink,stroke:TH.halo,'stroke-width':o.halo==null?4:o.halo,
     'paint-order':'stroke','stroke-linejoin':'round'},s);
   /* o.flip：所在分组被 scale(1,-1) 上下镜像时，把文字绕自身再镜像一次，保证文字正立可读 */
   if(o.flip) t.setAttribute('transform',
@@ -1242,7 +1411,7 @@ function busTerm(g,x,y,col){
 /* 电缆终端头 = 电缆末端的一个端子（白环 + 实心圆）——不再画成箭头状，避免与潮流箭头混淆；
    右下角返回可点击的端子节点（供 hitTerm 绑定接线） */
 function lineTerm(g,x,y,col,label,sgn){
-  g.appendChild(el('circle',{cx:x,cy:y,r:5.2,fill:'#fff',stroke:col,'stroke-width':1.5}));
+  g.appendChild(el('circle',{cx:x,cy:y,r:5.2,fill:TH.node,stroke:col,'stroke-width':1.5}));
   var dot=el('circle',{cx:x,cy:y,r:3.6,fill:col,stroke:'none'});
   g.appendChild(dot);
   if(label) txt(g,x+sgn*15,y-11,label,{size:10.5,weight:700,fill:col,halo:3.4,
@@ -1255,9 +1424,9 @@ function faultMark(g,x,y){
     'stroke-opacity':.45}));
   g.appendChild(el('circle',{cx:x,cy:y,r:11.5,fill:'none',stroke:COL.flt,'stroke-width':1.5,
     'stroke-dasharray':'3 3',class:'fltpulse'}));
-  g.appendChild(el('circle',{cx:x,cy:y,r:8,fill:COL.flt,stroke:'#fff','stroke-width':1.8}));
+  g.appendChild(el('circle',{cx:x,cy:y,r:8,fill:COL.flt,stroke:TH.halo,'stroke-width':1.8}));
   g.appendChild(el('text',{x:x,y:y+3.6,'text-anchor':'middle','font-size':10.5,'font-weight':700,
-    fill:'#fff'},'1'));
+    fill:TH.halo},'1'));
 }
 function isIso(id,tid){ return FAULT&&FAULT.iso&&FAULT.iso.indexOf(id+':'+tid)>=0; }
 function markSwitch(g,x,y,id,tid){
@@ -1280,10 +1449,10 @@ function defs(){
   m.appendChild(el('feMergeNode',{in:'SourceGraphic'}));
   f.appendChild(m); d.appendChild(f);
   var sh=el('filter',{id:'sh',x:'-40%',y:'-40%',width:'180%',height:'180%'});
-  sh.appendChild(el('feDropShadow',{dx:'0',dy:'1.5',stdDeviation:'1.6','flood-color':'#1b3a63','flood-opacity':'.16'}));
+  sh.appendChild(el('feDropShadow',{dx:'0',dy:'1.5',stdDeviation:'1.6','flood-color':TH.shadow,'flood-opacity':'.16'}));
   d.appendChild(sh);
   var ps=el('pattern',{id:'dots',width:'26',height:'26',patternUnits:'userSpaceOnUse'});
-  ps.appendChild(el('circle',{cx:'1.3',cy:'1.3',r:'1',fill:'#cfdaea'}));
+  ps.appendChild(el('circle',{cx:'1.3',cy:'1.3',r:'1',fill:TH.dot}));
   d.appendChild(ps);
   [['ga',COL.a],['gb',COL.b]].forEach(function(g){
     var lg=el('linearGradient',{id:g[0],x1:'0',y1:'0',x2:'.85',y2:'1'});
@@ -1304,9 +1473,9 @@ function wrapText(s,size,maxW){
 function stepMark(g,x,y,n,col){
   var str=String(n), w=(str.length>1?12+str.length*7.4:22), h=22;
   g.appendChild(el('rect',{x:x-w/2,y:y-h/2,width:w,height:h,rx:h/2,fill:col,
-    stroke:'#fff','stroke-width':2.2}));
+    stroke:TH.halo,'stroke-width':2.2}));
   g.appendChild(el('text',{x:x,y:y+4.1,'text-anchor':'middle','font-size':11.5,'font-weight':700,
-    fill:'#fff'},str));
+    fill:TH.halo},str));
 }
 /* 步骤标记（①/②/③）：不压在开关上——统一摆到本站一侧的空白列里，
    再用一根细引线指回被标注的那台开关（必要时连引线指示） */
@@ -1410,7 +1579,7 @@ function actionPanel(){
   var lastIdx=-1; rows.forEach(function(r,i){ if(r.on) lastIdx=i; });
   var h='<div class="ph" style="margin-bottom:2px">当前场景：<b>'+esc(FAULT.scene||FAULT.label)+'</b>'+
     (FAULT.scene?('　故障点：<b>'+esc(FAULT.label)+'</b>'):'')+'</div>';
-  h+='<div style="font-size:11.5px;color:#5b7083;line-height:1.5">'+esc(FAULT.msg||'')+'</div>';
+  h+='<div style="font-size:11.5px;color:var(--muted);line-height:1.5">'+esc(FAULT.msg||'')+'</div>';
   h+='<div class="tls" id="tlAxis">';
   rows.forEach(function(r,i){
     var cls=r.on?((i===lastIdx&&lastIdx<rows.length-1)?'cur':'past'):'wait';
@@ -1419,7 +1588,7 @@ function actionPanel(){
   });
   h+='</div>';
   var dl=deadLoads();
-  h+='<div class="ft" style="color:'+(dl?'#c92a2a':COL.live)+'">当前失电配电房 '+dl+' 个'+
+  h+='<div class="ft" style="color:'+(dl?'var(--flt)':'var(--live)')+'">当前失电配电房 '+dl+' 个'+
      (dl?'':'（全部恢复供电）')+'</div>';
   box.innerHTML=h;
 }
@@ -1428,11 +1597,11 @@ function textW(s,size){ var w=0;
   return w; }
 function badge(g,cx,cy,title,sub,color){
   var w=Math.max(textW(title,18),textW(sub,10.5))+46, h=52;
-  g.appendChild(el('rect',{x:cx-w/2,y:cy-h/2-2,width:w,height:h,rx:h/2,fill:'#fff',
+  g.appendChild(el('rect',{x:cx-w/2,y:cy-h/2-2,width:w,height:h,rx:h/2,fill:TH.node,
     stroke:color,'stroke-width':1.3,'stroke-opacity':.45,filter:'url(#sh)'}));
   g.appendChild(el('circle',{cx:cx-w/2+17,cy:cy+4,r:4.5,fill:color}));
   txt(g,cx+9,cy-3,title,{size:18,weight:700,fill:color,halo:0});
-  txt(g,cx+9,cy+15,sub,{size:10.5,weight:600,fill:'#5b7083',halo:0});
+  txt(g,cx+9,cy+15,sub,{size:10.5,weight:600,fill:COL.muted,halo:0});
 }
 function devDown(id,ev){
   if(ev.target.__term) return;
@@ -1462,6 +1631,7 @@ function devCtx(id,ev){
   openCtx(ev.clientX,ev.clientY,items,d.name);
 }
 function render(){
+  TH=themeCanvas();syncCol();
   while(SVG.firstChild) SVG.removeChild(SVG.firstChild);
   SVG.appendChild(defs());
   SVG.appendChild(el('rect',{x:-3000,y:-3000,width:9000,height:8200,fill:'url(#dots)','pointer-events':'none'}));
@@ -1547,7 +1717,7 @@ function render(){
         'stroke-opacity':.3,'stroke-linecap':'round','stroke-linejoin':'round','pointer-events':'none'}));
     var fd=FLOW.dir?FLOW.dir[w.id]:0;
     if(SHOW_FLOW&&live&&fd&&!isTie&&!isFlt){
-      gF.appendChild(el('path',{d:g0.d,fill:'none',stroke:'#fff','stroke-width':2.2,
+      gF.appendChild(el('path',{d:g0.d,fill:'none',stroke:TH.halo,'stroke-width':2.2,
         opacity:.95,'pointer-events':'none',class:'flow'+(fd<0?' rev':'')}));
       var tri=flowArrow(g0.pts,fd);
       if(tri) gF.appendChild(el('path',{d:'M'+ptsStr(tri[0])+' L'+ptsStr(tri[1])+' L'+ptsStr(tri[2])+' Z',
@@ -1594,7 +1764,7 @@ function render(){
       ln(g,-12*k,0,-bw,0,btCol,2);
       ln(g, bw,0, 12*k,0,btCol,2);
       g.appendChild(el('rect',{x:-bw,y:-bh,width:2*bw,height:2*bh,rx:1.8*k,
-        fill:btOn?btCol:'#fff',stroke:btOn?btCol:COL.open,'stroke-width':1.7,
+        fill:btOn?btCol:TH.swOff,stroke:btOn?btCol:COL.open,'stroke-width':1.7,
         'stroke-linejoin':'round'}));
       if(!btOn) txt(g,0,-(bh+7),'分',{size:6.8,weight:700,fill:COL.open,halo:2.6,flip:d.flip});
       txt(g,0,23*k,'母联',{size:7.6,fill:COL.muted,halo:3,flip:d.flip});
@@ -1618,7 +1788,7 @@ function render(){
         if(t.sw) g.appendChild(el('rect',{x:bx-swW/2,y:my-swH/2,width:swW,height:swH,rx:1.6,
           fill:col,stroke:col,'stroke-width':1.2}));
         else { g.appendChild(el('rect',{x:bx-swW/2,y:my-swH/2,width:swW,height:swH,rx:1.6,
-            fill:'#fff',stroke:COL.open,'stroke-width':1.2}));    /* 分位=空心，不再歪头 */
+            fill:TH.swOff,stroke:COL.open,'stroke-width':1.2}));    /* 分位=空心，不再歪头 */
           txt(g,bx+9.2*k,my+3, '分',{size:6.8,weight:700,fill:COL.open,halo:2.6,flip:d.flip}); }
         var hy0=Math.min(0,my)-4*k, hy1=Math.max(0,my)+4*k;   /* 热区留出端子位置，避免误合分 */
         var hit=el('rect',{x:bx-11*k,y:hy0,width:22*k,height:Math.max(10*k,hy1-hy0),fill:'transparent'});
@@ -1645,13 +1815,13 @@ function render(){
       var busX=subBusX(d), sgn=(d.terms[0]&&d.terms[0].tx>0)?1:-1;
       var sp0=EN[id+':bus'], c0=sp0?COL.sub:COL.dead;
       g.appendChild(el('rect',{x:-84,y:-74,width:168,height:148,rx:7,
-        fill:'#f5f8fc',stroke:COL.sub,'stroke-width':2}));
+        fill:TH.box,stroke:COL.sub,'stroke-width':2}));
       /* 主变 = **双绕组变压器**符号：两个**相交**的圆（GB/T 4728.4 / IEC 60617）。
          注意：同心双圆读作“自耦变压器”，套在线上还易与穿心式电流互感器混淆，故不采用 */
       var trX=-54*sgn, trR=12, trD=8.5;
       ln(g,-84*sgn,0,-74.5*sgn,0,c0,4);                    /* 上级进线（示意） */
-      g.appendChild(el('circle',{cx:trX-trD*sgn,cy:0,r:trR,fill:'#fff',stroke:'none'}));
-      g.appendChild(el('circle',{cx:trX+trD*sgn,cy:0,r:trR,fill:'#fff',stroke:'none'}));
+      g.appendChild(el('circle',{cx:trX-trD*sgn,cy:0,r:trR,fill:TH.node,stroke:'none'}));
+      g.appendChild(el('circle',{cx:trX+trD*sgn,cy:0,r:trR,fill:TH.node,stroke:'none'}));
       g.appendChild(el('circle',{cx:trX-trD*sgn,cy:0,r:trR,fill:'none',stroke:c0,'stroke-width':1.8}));
       g.appendChild(el('circle',{cx:trX+trD*sgn,cy:0,r:trR,fill:'none',stroke:c0,'stroke-width':1.8}));
       ln(g,-33.5*sgn,0,busX,0,c0,3);                       /* 主变 → 10 kV 母线 */
@@ -1665,7 +1835,7 @@ function render(){
         if(t.sw) g.appendChild(el('rect',{x:mx-8,y:t.ty-4.5,width:16,height:9,rx:1.4,
           fill:col,stroke:col,'stroke-width':1.2}));
         else { g.appendChild(el('rect',{x:mx-8,y:t.ty-4.5,width:16,height:9,rx:1.4,
-            fill:'#fff',stroke:COL.open,'stroke-width':1.2}));    /* 分位=空心，不再歪头 */
+            fill:TH.swOff,stroke:COL.open,'stroke-width':1.2}));    /* 分位=空心，不再歪头 */
           txt(g,mx+sgn*14,t.ty+3.4,'分',{size:6.8,weight:700,fill:COL.open,halo:2.6,flip:d.flip}); }
         var hit=el('rect',{x:mx-14,y:t.ty-12,width:28,height:24,fill:'transparent'});
         hit.style.cursor='pointer';
@@ -1679,7 +1849,7 @@ function render(){
       /* ── 变压器：双绕组符号（两圆相交，GB/T 4728.4 / IEC 60617）；导体，不画开关 ── */
       var trLive=EN[id+':bus'], trC=trLive?COL.live:COL.dead, trR=13, trOff=8.5;
       ln(g,-42,0,-trOff-trR,0,trC,2); ln(g,trOff+trR,0,42,0,trC,2);
-      circ(g,-trOff,0,trR,'#fff',{stroke:'none'}); circ(g,trOff,0,trR,'#fff',{stroke:'none'});
+      circ(g,-trOff,0,trR,TH.node,{stroke:'none'}); circ(g,trOff,0,trR,TH.node,{stroke:'none'});
       circ(g,-trOff,0,trR,'none',{stroke:trC,'stroke-width':1.9});
       circ(g, trOff,0,trR,'none',{stroke:trC,'stroke-width':1.9});
       hitTerm(g,circ(g,-42,0,4.4,trC),id,'p1');
@@ -1692,7 +1862,7 @@ function render(){
       ln(g,-44,0,-bw,0,swLive?COL.live:COL.dead,2);
       ln(g, bw,0, 44,0,swLive?COL.live:COL.dead,2);
       var srect=el('rect',{x:-bw,y:-bh,width:2*bw,height:2*bh,rx:1.6,
-        fill:swOn?swC:'#fff',stroke:swOn?swC:COL.open,'stroke-width':1.7});
+        fill:swOn?swC:TH.swOff,stroke:swOn?swC:COL.open,'stroke-width':1.7});
       if(swTie&&!swOn) srect.setAttribute('stroke-dasharray','5 3');
       g.appendChild(srect);
       var sHit=el('rect',{x:-bw-3,y:-bh-3,width:2*bw+6,height:2*bh+6,fill:'transparent'});
@@ -2389,7 +2559,8 @@ var MENUDEF={
     ['focus','专注画布','Z'],['flow','显示潮流箭头','V'],['glow','显示主干辉光','G'],
     ['panmode','抓手模式（按住空格）','Space'],['-'],
     ['navPal','左栏：元件库'],['navTopo','左栏：网架结构'],['navSim','左栏：故障演练'],['-'],
-    ['rtabSel','右栏：元件属性'],['rtabAct','右栏：动作过程']]},
+    ['rtabSel','右栏：元件属性'],['rtabAct','右栏：动作过程'],['-'],
+    ['colL','折叠 / 展开左栏'],['colR','折叠 / 展开右栏']]},
   drill:{title:'演练',items:[['demo','▶ 自动演示','P'],['step','单步执行','N'],['clear','复位运行方式','0'],['-'],
     ['impFault','导入故障点…']]},
   help:{title:'帮助',items:[['keys','快捷键一览'],['doc','接线约定 / 图元画法'],['about','关于本工具']]}
@@ -2401,8 +2572,11 @@ var ACTFN={loop:actLoop,new:actReset,reset:actReset,export:actExport,import:actI
   step:actStep,clear:actClear,impFault:actImpFault,keys:showKeys,doc:showDoc,about:showAbout,
   szUp:function(){ setSz(SZ*100+10); },szDn:function(){ setSz(SZ*100-10); },panmode:actPan,
   navPal:function(){ setNav('pal'); },navTopo:function(){ setNav('topo'); },navSim:function(){ setNav('sim'); },
-  rtabSel:function(){ setRTab('sel'); },rtabAct:function(){ setRTab('act'); }};
-function menuState(k){ if(k==='flow') return SHOW_FLOW; if(k==='glow') return SHOW_GLOW;
+  rtabSel:function(){ setRTab('sel'); },rtabAct:function(){ setRTab('act'); },
+  colL:function(){ toggleCol('l'); },colR:function(){ toggleCol('r'); }};
+function menuState(k){ if(k==='colL') return document.getElementById('mid').classList.contains('lcol');
+  if(k==='colR') return document.getElementById('mid').classList.contains('rcol');
+  if(k==='flow') return SHOW_FLOW; if(k==='glow') return SHOW_GLOW;
   if(k==='outward') return OUT; if(k==='loop') return LOOP;
   if(k==='panmode') return !!(SPACE||PAN_LOCK);
   if(k==='navPal') return NAV_P==='pal'; if(k==='navTopo') return NAV_P==='topo'; if(k==='navSim') return NAV_P==='sim';
@@ -3531,7 +3705,6 @@ function panels(){
     '<span class="tag"><i></i>开关站 <b>'+nSta+'</b> 座</span>'+
     '<span class="tag"><i></i>配电房 <b>'+nLoad+'</b> 个</span>'+
     '<span class="tag '+(nDead?'bad':'ok')+'"><i></i>失电配电房 <b>'+nDead+'</b> 个</span>'+
-    '<span class="tag '+(SIM.paired?'warn':'ok')+'"><i></i>运行方式 <b>'+modeText()+'</b></span>'+
     (FAULT?'<span class="tag warn"><i></i>故障演练中 <b>'+esc(FAULT.label||'')+'</b></span>':'');
   var chk=[], K=function(lv,t){ chk.push('<span class="al '+(lv||'')+'">'+t+'</span>'); };
   var pnames=SRC.filter(function(x){ return !DEADSRC[x]; }).map(function(x){ return DEV[x].name; });
@@ -3554,6 +3727,7 @@ function panels(){
   if(TOPO.radial) K('warn','单辐射接线：无联络通道，故障段下游须停电待修复');
   if(nSp) K('','预留/备用出线间隔 '+nSp+' 个（未接线）');
   if(FAULT) K('warn','已设置故障点：'+esc(FAULT.label)+'（① 模拟 ② 隔离 ③ 恢复）');
+  var sd=document.getElementById('sDev'); if(sd) sd.textContent=ORDER.length+' / '+WIRES.length;
   document.getElementById('pChk').innerHTML=chk.join('');
 
 
@@ -3729,6 +3903,99 @@ document.getElementById('mask').onclick=closeDrawers;
 document.getElementById('xL').onclick=closeDrawers;
 document.getElementById('xR').onclick=closeDrawers;
 
+/* ══════════ 主题：亮 / 暗 / 跟随系统（data-theme + localStorage） ══════════ */
+var THEME_KEY='spetal.theme';
+var mqDark=(window.matchMedia?window.matchMedia('(prefers-color-scheme: dark)'):null);
+var THEME='light';
+function themeResolved(){ return THEME==='auto'?(mqDark&&mqDark.matches?'dark':'light'):THEME; }
+function isDark(){ return themeResolved()==='dark'; }
+function themeCanvas(){ var d=isDark(); return {halo:d?'#171a1f':'#ffffff',node:d?'#20242a':'#ffffff',
+  box:d?'#20242a':'#f5f8fc',swOff:d?'#20242a':'#ffffff',dot:d?'#3a4552':'#cfdaea',
+  shadow:d?'#000000':'#1b3a63'}; }
+var TH=themeCanvas();
+function syncCol(){ var d=isDark();
+  COL.ink=d?'#e6edf5':'#12263f'; COL.muted=d?'#9aa7b6':'#5b7083'; COL.sub=d?'#c3cdda':'#334155';
+  COL.sel=d?'#e6edf5':'#0f172a'; COL.dead=d?'#6b7b8d':'#8e9dae';
+  COL.aLite=d?'#1e2a44':'#dbe7ff'; COL.bLite=d?'#12312c':'#d5f0ea'; }
+try{ var _t=localStorage.getItem(THEME_KEY); if(_t) THEME=_t; }catch(e){}
+if(['light','dark','auto'].indexOf(THEME)<0) THEME='light';
+function applyTheme(repaint){ var r=themeResolved();
+  document.documentElement.setAttribute('data-theme',r);
+  [].forEach.call(document.querySelectorAll('#themeSeg button'),function(b){
+    var on=b.dataset.th===THEME; b.classList.toggle('on',on);
+    b.setAttribute('aria-pressed',on?'true':'false'); });
+  var t=document.getElementById('sTheme');
+  if(t) t.textContent=(r==='dark'?'暗色':'亮色')+(THEME==='auto'?' · 跟随系统':'');
+  try{ localStorage.setItem(THEME_KEY,THEME); }catch(e){}
+  if(repaint&&typeof paint==='function') paint(); }
+[].forEach.call(document.querySelectorAll('#themeSeg button'),function(b){
+  b.onclick=function(){ THEME=b.dataset.th; applyTheme(true); }; });
+if(mqDark&&mqDark.addEventListener) mqDark.addEventListener('change',function(){
+  if(THEME==='auto') applyTheme(true); });
+applyTheme(false);
+
+/* ══════════ 左右栏：可拖宽 + 可折叠（宽度按断点记忆） ══════════ */
+var UI_KEY='spetal.ui';
+function uiPrefs(){ try{ return JSON.parse(localStorage.getItem(UI_KEY)||'{}'); }catch(e){ return {}; } }
+function uiPut(k,v){ var o=uiPrefs(); if(v==null) delete o[k]; else o[k]=v;
+  try{ localStorage.setItem(UI_KEY,JSON.stringify(o)); }catch(e){} }
+function bpKey(){ var w=window.innerWidth; return w>=1200?'desk':(w>=768?'tab':'mob'); }
+var SPLIT={l:340,r:338};
+function applyLayout(){ var k=bpKey(), o=uiPrefs(), mid=document.getElementById('mid'); if(!mid) return;
+  var wl=o['wl.'+k], wr=o['wr.'+k];
+  if(wl) mid.style.setProperty('--wl',wl+'px'); else mid.style.removeProperty('--wl');
+  if(wr) mid.style.setProperty('--wr',wr+'px'); else mid.style.removeProperty('--wr');
+  var hh=isHandheld();
+  mid.classList.toggle('lcol',!hh&&!!o.colL);
+  mid.classList.toggle('rcol',!hh&&!!o.colR);
+  SPLIT.l=wl||340; SPLIT.r=wr||338;
+  var cl=document.getElementById('colL'), cr=document.getElementById('colR');
+  if(cl) cl.textContent=mid.classList.contains('lcol')?'›':'‹';
+  if(cr) cr.textContent=mid.classList.contains('rcol')?'‹':'›'; }
+function bindSplit(el,which){
+  if(!el) return;
+  el.addEventListener('pointerdown',function(e){
+    var mid=document.getElementById('mid');
+    if(mid.classList.contains(which==='l'?'lcol':'rcol')) return;
+    var x0=e.clientX, w0=which==='l'?SPLIT.l:SPLIT.r;
+    el.classList.add('drag');
+    var mv=function(ev){ var d=ev.clientX-x0, nw=which==='l'?w0+d:w0-d;
+      nw=Math.max(200,Math.min(480,nw));
+      mid.style.setProperty(which==='l'?'--wl':'--wr',nw+'px');
+      if(which==='l') SPLIT.l=nw; else SPLIT.r=nw;
+      if(typeof autoFitSide==='function') autoFitSide(); };
+    var up=function(){ el.classList.remove('drag');
+      uiPut((which==='l'?'wl.':'wr.')+bpKey(), which==='l'?SPLIT.l:SPLIT.r);
+      window.removeEventListener('pointermove',mv); window.removeEventListener('pointerup',up);
+      window.removeEventListener('pointercancel',up);
+      if(typeof zoomFit==='function') setTimeout(zoomFit,20); };
+    window.addEventListener('pointermove',mv); window.addEventListener('pointerup',up);
+    window.addEventListener('pointercancel',up);
+    e.preventDefault(); });
+  el.addEventListener('dblclick',function(){ toggleCol(which); });
+}
+function toggleCol(which){ var mid=document.getElementById('mid');
+  var cls=which==='l'?'lcol':'rcol', on=!mid.classList.contains(cls);
+  mid.classList.toggle(cls,on); uiPut(which==='l'?'colL':'colR',on?1:null);
+  applyLayout();
+  if(typeof autoFitSide==='function') autoFitSide();
+  if(typeof zoomFit==='function') setTimeout(zoomFit,20); }
+bindSplit(document.getElementById('spL'),'l');
+bindSplit(document.getElementById('spR'),'r');
+var bCL=document.getElementById('colL'), bCR=document.getElementById('colR');
+if(bCL) bCL.onclick=function(e){ e.stopPropagation(); toggleCol('l'); };
+if(bCR) bCR.onclick=function(e){ e.stopPropagation(); toggleCol('r'); };
+applyLayout();
+window.addEventListener('resize',function(){ applyLayout(); });
+
+/* ══════════ 状态栏：缩放 / 图元数 / 主题 芯片 ══════════ */
+var zLvEl=document.getElementById('zLv'), sZoomEl=document.getElementById('sZoom');
+function syncZoomChip(){ if(sZoomEl&&zLvEl) sZoomEl.textContent=zLvEl.textContent; }
+if(window.MutationObserver&&zLvEl){
+  new MutationObserver(syncZoomChip).observe(zLvEl,{childList:true,characterData:true,subtree:true}); }
+syncZoomChip();
+
+
 /* ══════════ 左右侧栏：左 = 竖向图标导航（元件库 / 网架结构 / 故障演练），
    右 = 横向标签页（元件属性 / 动作过程）。演练一旦开始（① 之后）自动切到「动作过程」。 ══════════ */
 var NAV_P='topo', RTAB='sel', NAV_INIT=false;
@@ -3782,6 +4049,14 @@ window.__api={snap:snap,load:load,DEV:DEV,WIRES:WIRES,simulate:simulate,T:T,impa
   pan:function(){ return {space:SPACE,lock:PAN_LOCK}; },panSet:function(on){ PAN_LOCK=!!on; setPan(panOn());
     var b=document.getElementById('zPan'); if(b) b.classList.toggle('on',PAN_LOCK); },
   nav:function(){ return NAV_P; },navSet:setNav,rtab:function(){ return RTAB; },rtabSet:setRTab,
+  theme:function(){ return THEME; },themeResolved:themeResolved,themeSet:function(t){ THEME=t; applyTheme(true); },
+  layout:function(){ return {wl:SPLIT.l,wr:SPLIT.r,lcol:document.getElementById('mid').classList.contains('lcol'),
+    rcol:document.getElementById('mid').classList.contains('rcol')}; },
+  splitSet:function(which,px){ var mid=document.getElementById('mid');
+    px=Math.max(200,Math.min(480,px)); mid.style.setProperty(which==='l'?'--wl':'--wr',px+'px');
+    if(which==='l') SPLIT.l=px; else SPLIT.r=px; uiPut((which==='l'?'wl.':'wr.')+bpKey(),px);
+    if(typeof zoomFit==='function') setTimeout(zoomFit,20); },
+  colToggle:toggleCol,
   tp:tp,dirW:dirW,term:findTermObj,mode:function(){return {OUT:OUT,LOOP:LOOP};},
   applyModes:applyModes,actLoop:actLoop,paint:paint,ownerLabel:ownerLabel,
   status:sandboxStatus,stepCode:stepCode,addPalette:addPalette,wire:function(a,b){ push(); wire(a,b); paint(); }};
