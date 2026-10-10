@@ -98,6 +98,8 @@
   svg.d.pan{cursor:grab}                      /* 空格 / 抓手模式：小手 */
   svg.d.pan *{cursor:inherit!important}       /* 抓手模式下连图元上也显示小手 */
   svg.d.panning,svg.d.panning *{cursor:grabbing!important}
+  svg.d.placing,svg.d.placing *{cursor:crosshair!important}          /* 待放置元件：十字光标 */
+  .pitem.pick{border-color:#1d4ed8;background:#eaf1ff;box-shadow:0 0 0 2px rgba(29,78,216,.16)}
   .foot{padding:7px 15px;display:flex;gap:10px;align-items:center;font-size:12.5px;min-height:36px}
   .foot .t{color:#c92a2a;font-weight:700;white-space:nowrap}
   .foot .msg{color:var(--muted);flex:1}
@@ -479,7 +481,7 @@
         </div>
         <div class="railbody" id="railBody">
       <div class="pane box navp" data-p="pal">
-        <b>元件库 <span class="tlstate">拖入画布 · 或点击加入</span></b>
+        <b>元件库 <span class="tlstate">拖入 · 或点击加入 · 按 C 轮换</span></b>
         <div class="palette" id="palette">
           <button class="pitem" data-k="sub" draggable="true" title="10 kV 电源（主变 + 加粗母线 + 出线间隔）">
             <svg viewBox="0 0 40 26" aria-hidden="true">
@@ -511,8 +513,34 @@
               <path d="M13.5 11 L26.5 11 L20 24 Z" fill="#dbe7ff" stroke="#1d4ed8" stroke-width="1.4"/>
             </svg>
             <span>配电房 / 负荷<small>单电源 · 一个三角形</small></span></button>
+          <button class="pitem" data-k="tr" draggable="true" title="变压器（双绕组，两圆相交）：一次侧 / 二次侧各 1 个端子，导体恒通">
+            <svg viewBox="0 0 40 26" aria-hidden="true">
+              <line x1="1" y1="13" x2="9" y2="13" stroke="#334155" stroke-width="1.6"/>
+              <line x1="31" y1="13" x2="39" y2="13" stroke="#334155" stroke-width="1.6"/>
+              <circle cx="15.6" cy="13" r="7.2" fill="#fff" stroke="#0f8a4a" stroke-width="1.6"/>
+              <circle cx="24.4" cy="13" r="7.2" fill="#fff" stroke="#0f8a4a" stroke-width="1.6"/>
+            </svg>
+            <span>变压器<small>双绕组 · 两圆相交</small></span></button>
+          <button class="pitem" data-k="sw" draggable="true" title="开关（长方形框）：空心 = 分位、实心 = 合位；可旋转 0° / 90° 安装，点框体即分 / 合">
+            <svg viewBox="0 0 40 26" aria-hidden="true">
+              <line x1="1" y1="13" x2="10" y2="13" stroke="#334155" stroke-width="1.6"/>
+              <line x1="30" y1="13" x2="39" y2="13" stroke="#334155" stroke-width="1.6"/>
+              <rect x="10" y="9.4" width="20" height="7.2" rx="1.6" fill="#0f8a4a" stroke="#0f8a4a" stroke-width="1.4"/>
+            </svg>
+            <span>开关<small>长方形框 · 空心分 实心合</small></span></button>
+          <button class="pitem" data-k="bus" draggable="true" title="母线（加粗导体）：左端 / 右端 / 中间引下共 3 个端子，恒通">
+            <svg viewBox="0 0 40 26" aria-hidden="true">
+              <line x1="4" y1="12" x2="36" y2="12" stroke="#334155" stroke-width="4.4" stroke-linecap="round"/>
+              <line x1="11" y1="12" x2="11" y2="4" stroke="#334155" stroke-width="1.6"/>
+              <line x1="20" y1="12" x2="20" y2="22" stroke="#334155" stroke-width="1.6"/>
+              <line x1="29" y1="12" x2="29" y2="4" stroke="#334155" stroke-width="1.6"/>
+              <circle cx="11" cy="4" r="2" fill="#fff" stroke="#334155" stroke-width="1.2"/>
+              <circle cx="20" cy="22" r="2" fill="#fff" stroke="#334155" stroke-width="1.2"/>
+              <circle cx="29" cy="4" r="2" fill="#fff" stroke="#334155" stroke-width="1.2"/>
+            </svg>
+            <span>母线<small>加粗导体 · 3 端子</small></span></button>
         </div>
-        <div class="kv">电缆：从图元<b>端子</b>拖到另一个端子即成线；右键端子可设为「常开联络」。</div>
+        <div class="kv">电缆：从图元<b>端子</b>拖到另一个端子即成线（松手自动吸附最近端子）。<b>开关</b>点框体分 / 合；<b>变压器 / 母线</b>是导体、恒通。框选：空白处<b>左→右</b>完全框住、<b>右→左</b>碰到即选。</div>
         <div class="row"><button id="bBlank" class="mini">空白网架 / 清空画布…</button></div>
       </div>
 
@@ -619,7 +647,10 @@ var COL={a:'#1d4ed8',b:'#0d9488',tie:'#e8590c',ink:'#12263f',muted:'#5b7083',
          aLite:'#dbe7ff',bLite:'#d5f0ea',flt:'#e03131',sel:'#0f172a'};
 var TYPE={sub:'变电站（10 kV 电源：圆角方框 + 主变（两圆相交）+ 粗母线 + 出线间隔）',
   sta:'开关站（单母线分段环网柜：Ⅰ/Ⅱ段母线 + 母联；每段 2 回用户出线 + 2 回环网间隔）',
-  ld:'配电房（用户负荷，单电源）'};
+  ld:'配电房（用户负荷，单电源）',
+  tr:'变压器（双绕组：两圆相交；一次侧 / 二次侧各 1 个端子，导体恒通）',
+  sw:'开关（长方形框：空心 = 分位、实心 = 合位；A / B 两端子，可旋转 0° / 90° 安装）',
+  bus:'母线（加粗导体：左端 / 右端 / 中间引下 3 个端子，恒通、不可分断）'};
 var SZ=.80, LDN=0;                /* 配电房示意编号计数器 */                     /* 图元统一缩放（变电站保持 1） */
 
 /* ================= 图元定义 =================
@@ -674,6 +705,24 @@ function subTerms(mir,y1,y2,ln){ var s=mir?-1:1;
 function ldTerms(){ return [
   {id:'t1',n:'进线',k:'load',dir:[0,-1],bx:0,by:-24,tx:0,ty:-30}]; }
 function ldLive(id){ return !!EN[id+':t1']; }
+
+/* 变压器（双绕组）：一次侧（高压）/ 二次侧（低压）各 1 个端子。
+   nosw = 导体端子：恒通、不可分断（分合由两侧开关承担，变压器本身不是开关）。 */
+function trTerms(){ return [
+  {id:'p1',n:'一次侧（高压）',k:'line',sec:0,dir:[-1,0],bx:-9,by:0,tx:-42,ty:0,nosw:true},
+  {id:'p2',n:'二次侧（低压）',k:'line',sec:0,dir:[ 1,0],bx: 9,by:0,tx: 42,ty:0,nosw:true}]; }
+/* 开关（长方形框）：单状态 closed（合 = 实心框，分 = 空心框）。A 端为可操作侧，B 端为导体端子。 */
+function swTerms(){ return [
+  {id:'a',n:'A 端（进线侧）',k:'line',sec:0,dir:[-1,0],bx:-15,by:0,tx:-44,ty:0,sw:true},
+  {id:'b',n:'B 端（出线侧）',k:'line',sec:0,dir:[ 1,0],bx: 15,by:0,tx: 44,ty:0,nosw:true}]; }
+/* 母线（加粗导体）：左端 / 右端 / 中间引下，3 个导体端子，恒通。 */
+function busTerms(){ return [
+  {id:'e1',n:'母线左端',k:'line',sec:0,dir:[-1,0],bx:-34,by:0,tx:-52,ty:0,nosw:true},
+  {id:'e2',n:'母线右端',k:'line',sec:0,dir:[ 1,0],bx: 34,by:0,tx: 52,ty:0,nosw:true},
+  {id:'t1',n:'母线引下（中间）',k:'line',sec:0,dir:[0,1],bx:0,by:0,tx:0,ty:44,nosw:true}]; }
+/* 开关的单状态分 / 合（母联、断路器、隔离开关都用同一套「空心 / 实心」画法） */
+function swClosed(id){ var d=DEV[id]; if(!d||d.type!=='sw') return true;
+  if(d.closed===undefined) d.closed=true; return !!d.closed; }
 
 /* ================= 场景几何 ================= */
 var SAX=180,SBX=1420,SY=430,TIP=95,MID=800;
@@ -821,7 +870,7 @@ var LAYOUTS={
 };
 
 /* ================= 数据 ================= */
-var DEV={},ORDER=[],WIRES=[],SEQ=0,UNDO=[],SEL=null,EN={},SRC=[],SIM={},FLOW={},DEADSRC={},
+var DEV={},ORDER=[],WIRES=[],SEQ=0,UNDO=[],SEL=null,SELW=[],EN={},SRC=[],SIM={},FLOW={},DEADSRC={},
     FAULT=null,drag=null,PREV=null,CLIP=null,SHOW_FLOW=true,SHOW_GLOW=true;
 var TOPO={kind:'petal2',name:'双花瓣',desc:'',rings:['A','B'],badges:[],radial:false,secColor:false,trunkGlow:false};
 var OUTLINES=[];
@@ -830,6 +879,7 @@ function addDev(o){
   /* 低压二期预留字段：voltageLevel='MV'|'LV'；负荷可挂 lvFeederId（台区），
      lvAffected 为“影响台区数”，本期恒为 0 —— 不画 0.4 kV，只在数据模型里留位。 */
   if(o.voltageLevel===undefined) o.voltageLevel='MV';
+  if(o.type==='sw'&&o.closed===undefined) o.closed=true;
   if(o.type==='ld'&&o.lvFeederId===undefined) o.lvFeederId=null;
   if(o.lvAffected===undefined) o.lvAffected=0;
   o.terms=o.terms.map(function(t){ if(t.sw===undefined) t.sw=true; return t; });
@@ -838,6 +888,40 @@ function clearArr(a){ a.length=0; return a; }
 function findTermObj(d,t){ var x=DEV[d]; if(!x) return null;
   for(var i=0;i<x.terms.length;i++) if(x.terms[i].id===t) return x.terms[i]; return null; }
 function findWire(id){ for(var i=0;i<WIRES.length;i++) if(WIRES[i].id===id) return WIRES[i]; return null; }
+/* ══════════ 选择模型：多选（SEL.ids = 选中的图元集合，SELW = 选中的电缆集合）
+   单击 = 单选；Shift+单击 = 加选 / 减选；空白拖拽 = 框选（CAD：左→右窗口、右→左交叉） ══════════ */
+function selIds(){ if(!SEL||SEL.kind!=='dev') return []; return SEL.ids?SEL.ids.slice():[SEL.id]; }
+function isSelDev(id){ if(!SEL||SEL.kind!=='dev') return false;
+  return SEL.ids?SEL.ids.indexOf(id)>=0:SEL.id===id; }
+function isSelWire(id){ if(SELW.indexOf(id)>=0) return true;
+  return !!(SEL&&SEL.kind==='wire'&&SEL.id===id); }
+function selWireIds(){ var a=SELW.slice();
+  if(SEL&&SEL.kind==='wire'&&a.indexOf(SEL.id)<0) a.push(SEL.id); return a; }
+function setSelDev(ids,wires){ ids=(ids||[]).filter(function(i){ return !!DEV[i]; });
+  SEL=ids.length?{kind:'dev',id:ids[ids.length-1],ids:ids.slice()}:null;
+  SELW=(wires||[]).slice(); return SEL; }
+function setSelWire(id){ SEL=id?{kind:'wire',id:id}:null; SELW=[]; }
+function setSelTerm(id){ SEL=id?{kind:'term',id:id}:null; SELW=[]; }
+function toggleSelDev(id){ var a=selIds(), i=a.indexOf(id);
+  if(i>=0) a.splice(i,1); else a.push(id); setSelDev(a); }
+function clearSel(){ SEL=null; SELW=[]; }
+function actSelAll(){ setSelDev(ORDER.slice()); paint();
+  fmsg('已全选 '+selIds().length+' 个图元；拖动其中任意一个即整体移动，Esc 取消选择。'); }
+/* 图元外框（世界坐标）：框选命中判定用 */
+function devBounds(d){
+  var hw,hh; if(d.type==='sub'){ hw=90; hh=108; } else if(d.type==='sta'){ hw=116; hh=246; }
+  else if(d.type==='bus'){ hw=56; hh=50; } else if(d.type==='tr'){ hw=46; hh=30; }
+  else if(d.type==='sw'){ hw=48; hh=26; }
+  else { hw=42; hh=44; }
+  if(d.rot){ var r=d.rot*Math.PI/180,c=Math.abs(Math.cos(r)),s=Math.abs(Math.sin(r));
+    var W=hw*c+hh*s, H=hw*s+hh*c; hw=W; hh=H; }     /* 旋转后的轴对齐包围盒 */
+  return [d.x-hw,d.y-hh,d.x+hw,d.y+hh]; }
+/* 选中环尺寸：按类型给半宽 / 半高，再按 rot 换轴（薄长条旋转 90° 后环也跟着转） */
+function devRingHW(d){
+  var w=(d.type==='sub'?80:(d.type==='sta'?118:(d.type==='bus'?58:(d.type==='tr'?48:50))));
+  var h=(d.type==='sub'?80:(d.type==='sta'?250:(d.type==='bus'?50:(d.type==='tr'?32:28))));
+  var r=(d.rot||0)*Math.PI/180, c=Math.abs(Math.cos(r)), s=Math.abs(Math.sin(r));
+  return [w*c+h*s, w*s+h*c]; }
 function xf(d,lx,ly){ var y=d.flip?-ly:ly, r=d.rot*Math.PI/180,c=Math.cos(r),s=Math.sin(r);
   return [d.x+lx*c-y*s, d.y+lx*s+y*c]; }
 function dirW(d,t){ var r=d.rot*Math.PI/180,c=Math.cos(r),s=Math.sin(r),lx=t.dir[0],
@@ -978,7 +1062,11 @@ function simulate(){
   ORDER.forEach(function(id){
     var d=DEV[id];
     busKeys(id).forEach(find);
-    d.terms.forEach(function(t){ var k=id+':'+t.id; find(k); if(!t.sw) return;
+    d.terms.forEach(function(t){ var k=id+':'+t.id; find(k);
+      if(d.type==='sw'){ if(d.closed===undefined) d.closed=true;
+        if(d.closed) uni(k,termBus(id,t)); return; }      /* 开关：合 = 两端接通，分 = 断开 */
+      if(t.nosw){ uni(k,termBus(id,t)); return; }          /* 母线 / 变压器端子：导体，恒通 */
+      if(!t.sw) return;
       if(t.id==='bt'){ uni(id+':b1',id+':b2'); return; }   /* 母联开关：Ⅰ段 ↔ Ⅱ段 */
       uni(k,termBus(id,t)); });
   });
@@ -1027,6 +1115,11 @@ function deadLoads(){ var n=0; ORDER.forEach(function(id){
   if(DEV[id].type==='ld'&&!ldLive(id)) n++; }); return n; }
 /* 已带电的节点数：用于转供搜索的“连通性增益”，可识别需要多步合闸才能接通的备用通道 */
 function liveNodes(){ var n=0; for(var k in EN) if(EN[k]) n++; return n; }
+/* 把一只开关置分位后，会失电的配电房清单（属性面板「影响」列用） */
+function impactedSw(id){ var d=DEV[id]; if(!d||d.type!=='sw') return [];
+  var old=(d.closed!==false); d.closed=false; simulate();
+  var r=[]; ORDER.forEach(function(k){ if(DEV[k].type==='ld'&&!ldLive(k)) r.push(k); });
+  d.closed=old; simulate(); return r; }
 function impacted(did,tid){
   var t=findTermObj(did,tid); if(!t) return [];
   var o1=t.sw,o2=EN,o3=SIM.paired,o4=FLOW;
@@ -1150,7 +1243,7 @@ function busTerm(g,x,y,col){
    右下角返回可点击的端子节点（供 hitTerm 绑定接线） */
 function lineTerm(g,x,y,col,label,sgn){
   g.appendChild(el('circle',{cx:x,cy:y,r:5.2,fill:'#fff',stroke:col,'stroke-width':1.5}));
-  var dot=el('circle',{cx:x,cy:y,r:2.9,fill:col,stroke:'none'});
+  var dot=el('circle',{cx:x,cy:y,r:3.6,fill:col,stroke:'none'});
   g.appendChild(dot);
   if(label) txt(g,x+sgn*15,y-11,label,{size:10.5,weight:700,fill:col,halo:3.4,
     anchor:(sgn>0?'start':'end'),spacing:.2});
@@ -1344,20 +1437,27 @@ function badge(g,cx,cy,title,sub,color){
 function devDown(id,ev){
   if(ev.target.__term) return;
   var d=DEV[id]; if(!d) return;
-  ev.stopPropagation(); hideCtx(); SEL={kind:'dev',id:id}; setRTab('sel');
+  ev.stopPropagation(); hideCtx(); setRTab('sel');
+  if(ev.shiftKey){ toggleSelDev(id); paint(); return; }        /* Shift 单击 = 加选 / 减选 */
+  if(!isSelDev(id)) setSelDev([id]);
   var w=toWorld(ev); push();
-  drag={kind:'dev',id:id,dx:w[0]-d.x,dy:w[1]-d.y};
+  drag={kind:'dev',id:id,ids:selIds(),dx:w[0]-d.x,dy:w[1]-d.y};
   focusSel(); paint();
 }
 function devCtx(id,ev){
   var d=DEV[id]; if(!d) return;
   ev.preventDefault(); ev.stopPropagation(); hideCtx();
-  CTXDEV=id; CTXWIRE=null; SEL={kind:'dev',id:id}; paint();
+  CTXDEV=id; CTXWIRE=null; if(!isSelDev(id)) setSelDev([id]); paint();
   var items=[{a:'copy',t:'复制',k:'Ctrl+C'},{a:'dup',t:'原地复制',k:'Ctrl+D'},{a:'paste',t:'粘贴',k:'Ctrl+V'},{a:'-'}];
   if(d.type==='sta') items.push({a:'flip',t:'上下镜像（Ⅰ / Ⅱ 段互换位置）'});
   else items=[{a:'mirror',t:'左右镜像（出线换向）'},{a:'rotcw',t:'顺时针旋转 15°'},
               {a:'rotccw',t:'逆时针旋转 15°'},{a:'rot0',t:'角度归零'}];
   if(d.type==='sta') items.push({a:'closesw',t:'本站开关全部合闸'},{a:'opensw',t:'本站开关全部分闸'});
+  if(d.type==='sw'){
+    items.push({a:'swx',t:(d.closed===false?'开关合闸（框体变实心）':'开关分闸（框体变空心）')});
+    var isTie=d.terms.some(function(t){ return t.tie; });
+    items.push({a:(isTie?'untieSw':'tieSw'),t:(isTie?'取消常开联络标记':'设为常开联络开关（常开）')});
+  }
   items.push({a:'fault',t:'★ 设为故障点'},{a:'rename',t:'重命名…'},{a:'del',t:'删除图元',cls:'danger'});
   openCtx(ev.clientX,ev.clientY,items,d.name);
 }
@@ -1429,8 +1529,9 @@ function render(){
         {a:isTie?'untie':'tie',t:isTie?'取消常开联络标记':'设为常开联络（分位）'},
         {a:'fault',t:'设为故障点'},{a:'del',t:'删除这条电缆',cls:'danger'}],
         '电缆 '+(isTie?'（常开联络）':'')); });
+    hit.__hit=true;
     hit.addEventListener('mousedown',function(ev){ ev.stopPropagation(); hideCtx();
-      SEL={kind:'wire',id:w.id}; setRTab('sel');
+      setSelWire(w.id); setRTab('sel');
       var wp=toWorld(ev); push();
       drag={kind:'wire',id:w.id,sx:wp[0],sy:wp[1],
             ox:(w.bias||[0,0])[0],oy:(w.bias||[0,0])[1]};
@@ -1441,7 +1542,7 @@ function render(){
     if(isTie) at['stroke-dasharray']='9 5';
     if(isFlt) at['stroke-dasharray']='7 4';
     gW.appendChild(el('path',at));
-    if(SEL&&SEL.kind==='wire'&&SEL.id===w.id)        /* 选中电缆：加宽选中环 */
+    if(isSelWire(w.id))                              /* 选中电缆：加宽选中环 */
       gW.appendChild(el('path',{d:g0.d,fill:'none',stroke:COL.sel,'stroke-width':5,
         'stroke-opacity':.3,'stroke-linecap':'round','stroke-linejoin':'round','pointer-events':'none'}));
     var fd=FLOW.dir?FLOW.dir[w.id]:0;
@@ -1456,8 +1557,9 @@ function render(){
   });
 
   if(PREV){
-    var f=drag&&drag.from?T(drag.from.d,drag.from.t):null;
-    if(f){ var dd=DEV[drag.from.d], q=tp(dd,f), dv=dirW(dd,f);
+    var lf=(drag&&drag.kind==='link')?drag.from:(PEND||null);
+    var lt=lf?T(lf.d,lf.t):null, dd=lf?DEV[lf.d]:null;
+    if(lt&&dd){ var q=tp(dd,lt), dv=dirW(dd,lt);
       var rr=route(q,dv,[PREV[0],PREV[1]],[-dv[0],-dv[1]],[0,0]);
       gF.appendChild(el('path',{d:rr.d,fill:'none',stroke:COL.tie,'stroke-width':1.6,
         'stroke-dasharray':'5 5','pointer-events':'none'})); }
@@ -1466,8 +1568,8 @@ function render(){
   ORDER.forEach(function(id){
     var d=DEV[id], g=el('g',{transform:'translate('+d.x+','+d.y+') rotate('+d.rot+')'+(d.flip?' scale(1,-1)':'')});
     g.dataset.dev=id; g.style.cursor='move';
-    if(SEL&&SEL.kind==='dev'&&SEL.id===id){          /* 选中反馈：2px 选中环 */
-      var ohw=(d.type==='sub'?80:(d.type==='sta'?118:48)), ohh=(d.type==='sub'?80:(d.type==='sta'?250:48));
+    if(isSelDev(id)){          /* 选中反馈：2px 选中环（多选时每个都画） */
+      var rh=devRingHW(d), ohw=rh[0], ohh=rh[1];
       g.appendChild(el('rect',{x:-ohw,y:-ohh,width:2*ohw,height:2*ohh,rx:12,fill:'none',
         stroke:COL.sel,'stroke-width':2,'stroke-dasharray':'9 5','pointer-events':'none'}));
     }
@@ -1499,7 +1601,7 @@ function render(){
       if(bt){ var bhit=el('rect',{x:-11*k,y:-9*k,width:22*k,height:18*k,fill:'transparent'});
         bhit.style.cursor='pointer';
         bhit.addEventListener('mousedown',function(ev){ ev.stopPropagation(); hideCtx(); toggle(id,'bt'); });
-        g.appendChild(bhit);
+        bhit.__hit=true; g.appendChild(bhit);
         markSwitch(g,0,0,id,'bt');
         if(FAULT) MK.push([id,'bt',0,0]); }
       txt(g,-30*k,-8*k,'Ⅰ',{size:8.8,weight:700,fill:SC1,halo:3,flip:d.flip});
@@ -1518,10 +1620,11 @@ function render(){
         else { g.appendChild(el('rect',{x:bx-swW/2,y:my-swH/2,width:swW,height:swH,rx:1.6,
             fill:'#fff',stroke:COL.open,'stroke-width':1.2}));    /* 分位=空心，不再歪头 */
           txt(g,bx+9.2*k,my+3, '分',{size:6.8,weight:700,fill:COL.open,halo:2.6,flip:d.flip}); }
-        var hit=el('rect',{x:bx-11*k,y:my-15*k,width:22*k,height:30*k,fill:'transparent'});
+        var hy0=Math.min(0,my)-4*k, hy1=Math.max(0,my)+4*k;   /* 热区留出端子位置，避免误合分 */
+        var hit=el('rect',{x:bx-11*k,y:hy0,width:22*k,height:Math.max(10*k,hy1-hy0),fill:'transparent'});
         hit.style.cursor='pointer';
         hit.addEventListener('mousedown',function(ev){ ev.stopPropagation(); hideCtx(); toggle(id,t.id); });
-        g.appendChild(hit);
+        hit.__hit=true; g.appendChild(hit);
         markSwitch(g,bx,my,id,t.id);
         if(FAULT) MK.push([id,t.id,bx,my]);
         /* 环网间隔在外端头标注“进 / 出线”；用户间隔由三角形负荷符号标示，不再重复文字。
@@ -1535,7 +1638,7 @@ function render(){
           txt(g,X+tsg*11*k,Y+9*k,tag,
             {size:7.4,weight:700,fill:live?col:COL.muted,halo:2.8,flip:d.flip});
         }
-        var tc=circ(g,X,Y,3.4*k,col); hitTerm(g,tc,id,t.id);
+        var tc=circ(g,X,Y,4.4*k,col); hitTerm(g,tc,id,t.id);
       });
     } else if(d.type==='sub'){
       /* ── 变电站：外壳 + 主变示意（双圆）+ 10 kV 粗母线 + 出线间隔 ── */
@@ -1567,11 +1670,46 @@ function render(){
         var hit=el('rect',{x:mx-14,y:t.ty-12,width:28,height:24,fill:'transparent'});
         hit.style.cursor='pointer';
         hit.addEventListener('mousedown',function(ev){ ev.stopPropagation(); hideCtx(); toggle(id,t.id); });
-        g.appendChild(hit);
+        hit.__hit=true; g.appendChild(hit);
         markSwitch(g,mx,t.ty,id,t.id);
         if(FAULT) MK.push([id,t.id,mx,t.ty]);
         var tc=lineTerm(g,t.tx,t.ty,col,t.ln,sgn); hitTerm(g,tc,id,t.id);
       });
+    } else if(d.type==='tr'){
+      /* ── 变压器：双绕组符号（两圆相交，GB/T 4728.4 / IEC 60617）；导体，不画开关 ── */
+      var trLive=EN[id+':bus'], trC=trLive?COL.live:COL.dead, trR=13, trOff=8.5;
+      ln(g,-42,0,-trOff-trR,0,trC,2); ln(g,trOff+trR,0,42,0,trC,2);
+      circ(g,-trOff,0,trR,'#fff',{stroke:'none'}); circ(g,trOff,0,trR,'#fff',{stroke:'none'});
+      circ(g,-trOff,0,trR,'none',{stroke:trC,'stroke-width':1.9});
+      circ(g, trOff,0,trR,'none',{stroke:trC,'stroke-width':1.9});
+      hitTerm(g,circ(g,-42,0,4.4,trC),id,'p1');
+      hitTerm(g,circ(g, 42,0,4.4,trC),id,'p2');
+    } else if(d.type==='sw'){
+      /* ── 开关：长方形框（空心 = 分位、实心 = 合位）；横置，可旋转 90° 竖装 ── */
+      var swOn=swClosed(id), swTie=d.terms.some(function(t){ return t.tie; });
+      var swLive=EN[id+':bus']&&swOn, swC=swLive?COL.live:(swTie?COL.tie:COL.open);
+      var bw=15, bh=5.4;
+      ln(g,-44,0,-bw,0,swLive?COL.live:COL.dead,2);
+      ln(g, bw,0, 44,0,swLive?COL.live:COL.dead,2);
+      var srect=el('rect',{x:-bw,y:-bh,width:2*bw,height:2*bh,rx:1.6,
+        fill:swOn?swC:'#fff',stroke:swOn?swC:COL.open,'stroke-width':1.7});
+      if(swTie&&!swOn) srect.setAttribute('stroke-dasharray','5 3');
+      g.appendChild(srect);
+      var sHit=el('rect',{x:-bw-3,y:-bh-3,width:2*bw+6,height:2*bh+6,fill:'transparent'});
+      sHit.style.cursor='pointer'; sHit.__hit=true;
+      sHit.addEventListener('mousedown',function(ev){ hideCtx(); SW_TAP={id:id,x:ev.clientX,y:ev.clientY}; });
+      g.appendChild(sHit);
+      markSwitch(g,0,0,id,'a');
+      if(FAULT) MK.push([id,'a',0,0]);
+      hitTerm(g,circ(g,-44,0,4.4,swC),id,'a');
+      hitTerm(g,circ(g, 44,0,4.4,swC),id,'b');
+    } else if(d.type==='bus'){
+      /* ── 母线：加粗导体；左端 / 右端 / 中间引下 3 个端子 ── */
+      var busC=EN[id+':bus']?COL.live:COL.dead;
+      ln(g,-52,0,52,0,busC,4.2); ln(g,0,0,0,44,busC,2);
+      hitTerm(g,circ(g,-52,0,4.4,busC),id,'e1');
+      hitTerm(g,circ(g, 52,0,4.4,busC),id,'e2');
+      hitTerm(g,circ(g,  0,44,4.4,busC),id,'t1');
     } else {
       /* 配电房（用户）：一个用户出线间隔 = 一个独立负荷（一个三角形，顶点背向开关站） */
       var hs=DEV[d.host], ht=hs?findTermObj(d.host,d.hterm):null,
@@ -1582,7 +1720,7 @@ function render(){
       ln(g,0,-30*lk,0,-14*lk,c1,1.7);
       g.appendChild(el('path',{d:'M'+(-7.8*lk)+' '+(-14*lk)+' L '+(7.8*lk)+' '+(-14*lk)+
         ' L 0 '+(4*lk)+' Z',fill:v1?lite:'#c6d0da',stroke:c1,'stroke-width':1.6,'stroke-linejoin':'round'}));
-      var t1=circ(g,0,-30*lk,3.2*lk,c1); hitTerm(g,t1,id,'t1');
+      var t1=circ(g,0,-30*lk,4.2*lk,c1); hitTerm(g,t1,id,'t1');
     }
     g.addEventListener('mousedown',function(ev){ devDown(id,ev); });
     g.addEventListener('contextmenu',function(ev){ devCtx(id,ev); });
@@ -1599,6 +1737,7 @@ function render(){
       var lt=txt(gL,d.x,ly,d.name,{size:11.5,weight:700,fill:liveOf(id)?d.color:COL.muted,
         halo:3.4,spacing:.3});
       lt.style.cursor='move';
+      lt.__hit=true;
       lt.addEventListener('mousedown',function(ev){ devDown(id,ev); });
       lt.addEventListener('contextmenu',function(ev){ devCtx(id,ev); });
     }
@@ -1607,6 +1746,11 @@ function render(){
       txt(gL,d.x,d.y-86,'10 kV 母线（电源）',{size:10,fill:COL.muted});
       var sg=(d.terms[0]&&d.terms[0].tx>0)?1:-1, tlp=xf(d,-54*sg,27);
       txt(gL,tlp[0],tlp[1],'主变',{size:9,fill:COL.muted,halo:3});
+    }
+    if(d.type==='tr'||d.type==='sw'||d.type==='bus'){
+      var lp=(d.type==='bus')?xf(d,0,-34):xf(d,0,34);
+      txt(gL,lp[0],lp[1],d.name+((d.type==='sw'&&!swClosed(id))?'（分）':''),
+        {size:10.5,weight:700,fill:liveOf(id)?COL.ink:COL.muted,halo:3.4});
     }
   });
   (TOPO.badges||[]).forEach(function(b){
@@ -1635,6 +1779,24 @@ function render(){
     placeStepMarks(gL,mk);
   }
 
+  if(LINK_HOVER||PEND){                        /* 接线目标高亮：待接=橙，吸附目标=绿 */
+    var hl=PEND?{d:PEND.d,t:PEND.t,c:COL.tie}:{d:LINK_HOVER.d,t:LINK_HOVER.t,c:COL.live};
+    var ht=findTermObj(hl.d,hl.t), hp=ht?tp(DEV[hl.d],ht):null;
+    if(hp){ var hk=kOf(DEV[hl.d]);
+      gL.appendChild(el('circle',{cx:hp[0],cy:hp[1],r:9*hk,fill:'none',stroke:hl.c,'stroke-width':2,
+        'stroke-dasharray':'3 3','pointer-events':'none'}));
+      txt(gL,hp[0],hp[1]-13*hk,termName(hl.d,hl.t),{size:11,weight:700,fill:hl.c,halo:3.6}); }
+  }
+  if(BAND){                                  /* 框选矩形：窗口=蓝实线，交叉=绿虚线 */
+    var bx0=Math.min(BAND[0],BAND[2]),by0=Math.min(BAND[1],BAND[3]),
+        bx1=Math.max(BAND[0],BAND[2]),by1=Math.max(BAND[1],BAND[3]),
+        win=bandWin(BAND), bc=win?'#1d4ed8':'#0f8a4a';
+    gL.appendChild(el('rect',{x:bx0,y:by0,width:Math.max(1,bx1-bx0),height:Math.max(1,by1-by0),
+      fill:bc,'fill-opacity':.06,stroke:bc,'stroke-width':1.6/kOf({type:'ld'}),
+      'stroke-dasharray':win?'none':'9 6','pointer-events':'none'}));
+    txt(gL,bx0+(win?4:4),by0-9,(win?'窗口选择（左→右 · 完全框住）':'交叉选择（右→左 · 碰到即选）'),
+      {size:12,weight:700,fill:bc,halo:4});
+  }
   SVG.appendChild(gG); SVG.appendChild(gW); SVG.appendChild(gF); SVG.appendChild(gD); SVG.appendChild(gL);
 }
 function flowArrow(pts,sign){
@@ -1646,19 +1808,49 @@ function flowArrow(pts,sign){
           [x-u[0]*L*0.85-px*4.6,y-u[1]*L*0.85-py*4.6]];
 }
 
+/* ── 接线：① 从端子拖到端子（松手时就近吸附）② 点一下端子、再点另一个端子 ──
+   拖动 / 点选过程中，最近的可用端子会高亮并显示名称，避免“没接到节点上”。 */
+var PEND=null, LINK_HOVER=null, TERM_SNAP=22, SW_TAP=null;
+function termName(d,t){ var o=findTermObj(d,t); return (DEV[d]?DEV[d].name:'')+' · '+((o&&o.n)||t); }
+function nearestTerm(x,y,exclude){
+  var best=null,bd=1e9;
+  ORDER.forEach(function(id){ var d=DEV[id];
+    if(exclude&&id===exclude.d) return;      /* 同一图元的两个端子不互接（电气上无意义） */
+    d.terms.forEach(function(t){ var p=tp(d,t);
+      var dd=(p[0]-x)*(p[0]-x)+(p[1]-y)*(p[1]-y);
+      if(dd<bd){ bd=dd; best={d:id,t:t.id,x:p[0],y:p[1]}; } }); });
+  if(!best||Math.sqrt(bd)>TERM_SNAP) return null;
+  return best; }
+function clearPend(){ if(PEND){ PEND=null; PREV=null; paint(); } }
 function hitTerm(g,node,id,tid){
   node.__term=true; node.style.cursor='crosshair';
   node.addEventListener('mousedown',function(ev){
-    ev.stopPropagation(); hideCtx(); drag={kind:'link',from:{d:id,t:tid}}; PREV=null;
-    SEL={kind:'term',id:id+':'+tid}; paint();
+    ev.stopPropagation(); hideCtx();
+    if(PEND&&PEND.d!==id){                          /* 点选模式的第二下：直接接线 */
+      push(); wire([PEND.d,PEND.t],[id,tid]);
+      fmsg('已接线：'+termName(PEND.d,PEND.t)+' ↔ '+termName(id,tid));
+      PEND=null; PREV=null; LINK_HOVER=null; paint(); return; }
+    if(PEND&&PEND.d===id){                          /* 同一图元的两个端子：不允许互接 */
+      PEND=null; PREV=null; paint();
+      fmsg('同一个图元的两个端子之间不能接线（请分别接到不同图元 / 不同母线段）。'); return; }
+    drag={kind:'link',from:{d:id,t:tid},sx:ev.clientX,sy:ev.clientY};
+    PREV=null; LINK_HOVER=null;
+    setSelTerm(id+':'+tid); paint();
   });
   node.addEventListener('mouseup',function(ev){
     ev.stopPropagation();
-    if(drag&&drag.kind==='link'){
-      var f=drag.from;
-      if(!(f.d===id&&f.t===tid)){ push(); wire([f.d,f.t],[id,tid]); }
-      drag=null; PREV=null; paint();
-    }
+    if(!(drag&&drag.kind==='link')) return;
+    var f=drag.from;
+    var moved=Math.hypot(ev.clientX-(drag.sx||ev.clientX),ev.clientY-(drag.sy||ev.clientY))>6;
+    if(f.d===id&&f.t===tid&&!moved){                /* 原地点击 → 进入“点选两端”模式 */
+      PEND={d:id,t:tid}; drag=null; PREV=null; paint();
+      fmsg('已选中端子 '+termName(id,tid)+'：再点另一个端子即可接线（Esc 取消）。'); return; }
+    if(f.d===id){                                   /* 同一图元的两端子：不接线，只提示 */
+      drag=null; PREV=null; LINK_HOVER=null; paint();
+      fmsg('同一个图元的两个端子之间不能接线。'); return; }
+    push(); wire([f.d,f.t],[id,tid]);
+    fmsg('已接线：'+termName(f.d,f.t)+' ↔ '+termName(id,tid));
+    drag=null; PREV=null; LINK_HOVER=null; paint();
   });
 }
 
@@ -1699,9 +1891,39 @@ function zoomFit(){ var pad=46, x0=1e9,y0=1e9,x1=-1e9,y1=-1e9, any=false;
   applyVB();
 }
 function zoom100(){ Z=1; CX=800; CY=450; applyVB(); }
+/* ── 框选（CAD）：左→右 = 窗口选择（必须完全框住）；右→左 = 交叉选择（碰到就选中） ── */
+var BAND=null;
+function bandWin(b){ return b[2]>=b[0]; }
+function inBand(b,box){
+  var x0=Math.min(b[0],b[2]),x1=Math.max(b[0],b[2]),y0=Math.min(b[1],b[3]),y1=Math.max(b[1],b[3]);
+  if(bandWin(b)) return box[0]>=x0&&box[2]<=x1&&box[1]>=y0&&box[3]<=y1;
+  return !(box[2]<x0||box[0]>x1||box[3]<y0||box[1]>y1); }
+function applyBand(){
+  if(!BAND) return;
+  var keep=(BAND[5]||[]).slice(), devs=keep.slice(), wires=[];
+  ORDER.forEach(function(id){ if(devs.indexOf(id)<0&&inBand(BAND,devBounds(DEV[id]))) devs.push(id); });
+  if(!bandWin(BAND)){                       /* 交叉选择连电缆一起带上（命中即选） */
+    WIRES.forEach(function(w){ var g0=wpath(w); if(!g0) return;
+      var ok=g0.pts.some(function(q){ return inBand(BAND,[q[0],q[1],q[0],q[1]]); });
+      if(ok) wires.push(w.id); });
+  } else {
+    WIRES.forEach(function(w){ var g0=wpath(w); if(!g0) return;
+      var all=g0.pts.every(function(q){ return inBand(BAND,[q[0],q[1],q[0],q[1]]); });
+      if(all) wires.push(w.id); });
+  }
+  setSelDev(devs,wires);
+  if(devs.length||wires.length) fmsg('已选中 '+devs.length+' 个图元 · '+wires.length+' 条电缆（'+
+    (bandWin(BAND)?'窗口选择：左→右，完全框住才选中':'交叉选择：右→左，碰到即选中')+'）。');
+  else fmsg('框选未命中：左→右需完全框住图元；右→左碰到即选中。');
+}
 /* 选中图元时：若不在视野内则居中（滚入视区） */
 function focusSel(){ if(!SEL) return; var x,y;
-  if(SEL.kind==='dev'&&DEV[SEL.id]){ x=DEV[SEL.id].x; y=DEV[SEL.id].y; }
+  var ids=selIds();
+  if(ids.length>1){ var b=[1e9,1e9,-1e9,-1e9];
+    ids.forEach(function(id){ var q=devBounds(DEV[id]);
+      b[0]=Math.min(b[0],q[0]); b[1]=Math.min(b[1],q[1]); b[2]=Math.max(b[2],q[2]); b[3]=Math.max(b[3],q[3]); });
+    x=(b[0]+b[2])/2; y=(b[1]+b[3])/2; }
+  else if(SEL.kind==='dev'&&DEV[SEL.id]){ x=DEV[SEL.id].x; y=DEV[SEL.id].y; }
   else if(SEL.kind==='wire'){ var w=findWire(SEL.id); if(!w) return; var g0=wpath(w); if(!g0) return;
     var m=longestMid(g0.pts); if(!m) return; x=m[0]; y=m[1]; }
   else return;
@@ -1720,36 +1942,74 @@ SVG.addEventListener('mousemove',function(ev){
   if(drag.kind==='dev'){
     var d=DEV[drag.id], nx=Math.round((wx-drag.dx)/5)*5, ny=Math.round((wy-drag.dy)/5)*5;
     var ddx=nx-d.x, ddy=ny-d.y;
-    d.x=nx; d.y=ny;
-    /* 拖动开关站 / 变电站时，挂在它上面的配电房整体跟随 */
-    if(d.type==='ld') d.moved=1;
-    if(ddx||ddy) ORDER.forEach(function(k){ var o=DEV[k];
-      if(o.type==='ld'&&o.host===d.id){ o.x+=ddx; o.y+=ddy; o.moved=1; } });
-    refresh();
-  } else if(drag.kind==='link'){ PREV=[wx,wy]; refresh(); }
+    if(ddx||ddy){
+      var moved=[];
+      (drag.ids&&drag.ids.length>1?drag.ids:[drag.id]).forEach(function(k){
+        var o=DEV[k]; if(!o||moved.indexOf(o.id)>=0) return;
+        o.x+=ddx; o.y+=ddy; if(o.type==='ld') o.moved=1; moved.push(o.id);
+        /* 拖动开关站 / 变电站时，挂在它上面的配电房整体跟随 */
+        ORDER.forEach(function(kk){ var q=DEV[kk];
+          if(q.type==='ld'&&q.host===o.id&&moved.indexOf(q.id)<0){ q.x+=ddx; q.y+=ddy; q.moved=1; moved.push(q.id); } }); });
+      refresh();
+    }
+  } else if(drag.kind==='link'){ PREV=[wx,wy];
+    LINK_HOVER=nearestTerm(wx,wy,drag.from); refresh(); }
   else if(drag.kind==='wire'){
     var w=findWire(drag.id); if(!w) return;
     w.bias=[Math.round((drag.ox+wx-drag.sx)/5)*5, Math.round((drag.oy+wy-drag.sy)/5)*5];
     refresh();
   } else if(drag.kind==='pan'){
     CX=drag.cx-(ev.clientX-drag.sx)*drag.k; CY=drag.cy-(ev.clientY-drag.sy)*drag.k; applyVB();
+  } else if(drag.kind==='band'){
+    if(BAND){ BAND[2]=wx; BAND[3]=wy; } refresh();
   }
 });
-window.addEventListener('mouseup',function(){
-  if(drag&&drag.kind==='link'){ drag=null; PREV=null; refresh(); }
-  else drag=null;
-  SVG.classList.remove('panning'); });
-/* 捕获阶段：空白处 = 平移；空格 / 抓手模式下在图元上按下也平移（优先级高于图元拖动） */
+window.addEventListener('mouseup',function(ev){
+  var wasBand=!!(drag&&drag.kind==='band');
+  if(SW_TAP){                                  /* 开关框体：原地点击 = 分 / 合；拖动 = 移动 */
+    var tapT=SW_TAP; SW_TAP=null;
+    if(Math.hypot((ev.clientX||0)-tapT.x,(ev.clientY||0)-tapT.y)<=4){ drag=null; PREV=null; toggle(tapT.id,'a'); return; }
+  }
+  if(drag&&drag.kind==='link'){
+    var src=drag.from;                       /* 松手时就近吸附：不必正好压在端子上 */
+    var barely=Math.hypot((ev.clientX||0)-(drag.sx||0),(ev.clientY||0)-(drag.sy||0))<=6;
+    if(barely&&!(LINK_HOVER&&!(src.d===LINK_HOVER.d||src.t===LINK_HOVER.t))){
+      PEND={d:src.d,t:src.t};                /* 原地一点：转入“点选两端”模式 */
+      fmsg('已选中端子 '+termName(src.d,src.t)+'：再点另一个端子即可接线（Esc 取消）。');
+    } else if(LINK_HOVER&&!(src.d===LINK_HOVER.d&&src.t===LINK_HOVER.t)){
+      push(); wire([src.d,src.t],[LINK_HOVER.d,LINK_HOVER.t]);
+      fmsg('已接线：'+termName(src.d,src.t)+' ↔ '+termName(LINK_HOVER.d,LINK_HOVER.t));
+    } else if(!LINK_HOVER){
+      fmsg('未接到端子上：把线头拖到端子附近（会自动吸附），或改用「点一下端子 → 再点另一个端子」。');
+    }
+    drag=null; PREV=null; LINK_HOVER=null; }
+  drag=null; PREV=null; SVG.classList.remove('panning');
+  if(wasBand){ applyBand(); BAND=null; paint(); return; }
+  refresh(); });
+/* 命中判定：从 target 往上找带 __hit / __term / data-dev 的交互节点；找不到 = 点在“空白/装饰”上 */
+function hitTarget(node){ var n=node;
+  while(n&&n!==SVG&&n!==document){
+    if(n.__hit||n.__term||(n.dataset&&n.dataset.dev)) return n;
+    n=n.parentNode; }
+  return null; }
+/* 捕获阶段：抓手 / 空格 / 中键 = 平移（在图元上按下也平移）；空白拖拽 = 框选 */
 SVG.addEventListener('mousedown',function(ev){
-  var blank=(ev.target===SVG);
-  if(!blank&&!panOn()) return;
-  if(blank){ hideCtx(); SEL=null; paint(); }
-  drag={kind:'pan',sx:ev.clientX,sy:ev.clientY,cx:CX,cy:CY,k:worldPerPx()};
-  SVG.classList.add('panning'); ev.preventDefault(); ev.stopPropagation(); },true);
+  var blank=!hitTarget(ev.target);
+  if(panOn()||ev.button===1){
+    if(blank&&!panOn()){ hideCtx(); clearSel(); paint(); }
+    drag={kind:'pan',sx:ev.clientX,sy:ev.clientY,cx:CX,cy:CY,k:worldPerPx()};
+    SVG.classList.add('panning'); ev.preventDefault(); ev.stopPropagation(); return; }
+  if(!blank) return;
+  if(PLACE){ placeAt(ev); ev.preventDefault(); ev.stopPropagation(); return; }   /* 待放置元件模式 */
+  hideCtx();
+  if(!ev.shiftKey) clearSel();
+  var w=toWorldXY(ev.clientX,ev.clientY);
+  BAND=[w[0],w[1],w[0],w[1],0,ev.shiftKey?selIds():[]];
+  drag={kind:'band'}; paint(); ev.preventDefault(); ev.stopPropagation(); },true);
 /* 空白画布右键：粘贴 / 视图 / 运行方式（在当前鼠标处落子） */
 SVG.addEventListener('contextmenu',function(ev){
   if(ev.target!==SVG) return;
-  ev.preventDefault(); hideCtx(); SEL=null; paint();
+  ev.preventDefault(); hideCtx(); clearSel(); paint();
   var items=[];
   if(CLIP) items.push({a:'pasteHere',t:'粘贴到此处',k:'Ctrl+V'});
   else items.push({a:'paste',t:'粘贴',k:'Ctrl+V'});
@@ -1757,6 +2017,10 @@ SVG.addEventListener('contextmenu',function(ev){
     {a:'glow',t:'显示主干辉光',k:'G'},{a:'-',},{a:'clear',t:'复位运行方式',k:'0'});
   CTXWIRE=null; CTXDEV=null; CTXTHERE=[ev.clientX,ev.clientY];
   openCtx(ev.clientX,ev.clientY,items,'画布'); });
+SVG.addEventListener('mousemove',function(ev){
+  if(!PEND||drag) return;
+  var w=toWorldXY(ev.clientX,ev.clientY);
+  PREV=[w[0],w[1]]; LINK_HOVER=nearestTerm(w[0],w[1],PEND); refresh(); });
 SVG.addEventListener('wheel',function(ev){ ev.preventDefault();
   var w=toWorld(ev); zoomAt(ev.deltaY<0?1.12:1/1.12,w[0],w[1]); },{passive:false});
 /* 触摸屏：双指捏合缩放（以两指中点锚定并跟随移动），单指拖动由鼠标事件承担 */
@@ -1777,9 +2041,12 @@ SVG.addEventListener('touchmove',function(ev){
 },{passive:false});
 SVG.addEventListener('touchend',function(ev){ if(ev.touches.length<2) PINCH=null; },{passive:true});
 
-function toggle(id,tid){ var t=findTermObj(id,tid); if(!t) return; push(); t.sw=!t.sw; paint(); }
+function toggle(id,tid){ var d=DEV[id];
+  if(d&&d.type==='sw'){ push(); d.closed=(d.closed===false); paint(); return; }   /* 开关：整只分 / 合 */
+  var t=findTermObj(id,tid); if(!t) return; push(); t.sw=!t.sw; paint(); }
 function delWire(wid){ push();
   for(var i=WIRES.length-1;i>=0;i--) if(WIRES[i].id===wid) WIRES.splice(i,1);
+  for(var j=SELW.length-1;j>=0;j--) if(SELW[j]===wid) SELW.splice(j,1);
   if(SEL&&SEL.kind==='wire'&&SEL.id===wid) SEL=null;
   if(FAULT&&FAULT.kind==='wire'&&FAULT.id===wid) FAULT=null; paint(); }
 function delDev(id){ push();
@@ -1787,20 +2054,26 @@ function delDev(id){ push();
   delete DEV[id];
   for(var j=ORDER.length-1;j>=0;j--) if(ORDER[j]===id) ORDER.splice(j,1);
   if(FAULT&&FAULT.kind==='dev'&&FAULT.id===id) FAULT=null;
-  SEL=null; paint(); }
+  for(var m=SELW.length-1;m>=0;m--){ var wid=SELW[m];
+    for(var n=WIRES.length-1;n>=0;n--) if(WIRES[n].id===wid) WIRES.splice(n,1); }
+  SELW=[]; SEL=null; paint(); }
 function push(){ UNDO.push(JSON.stringify(snap())); if(UNDO.length>80) UNDO.shift(); }
 function snap(){ return {DEV:ORDER.map(function(id){ var d=DEV[id];
     return {id:d.id,type:d.type,name:d.name,x:d.x,y:d.y,rot:d.rot,flip:!!d.flip,flip0:!!d.flip0,
       color:d.color,pet:d.pet,host:d.host,hterm:d.hterm,ht2:d.ht2,moved:!!d.moved,
       voltageLevel:d.voltageLevel||'MV',lvFeederId:d.lvFeederId||null,lvAffected:d.lvAffected||0,
+      closed:(d.type==='sw'?!!(d.closed!==false):undefined),
       terms:d.terms.map(function(t){ return {id:t.id,n:t.n,k:t.k,sec:t.sec,bx:t.bx,by:t.by,
-        tx:t.tx,ty:t.ty,sw:t.sw,tie:!!t.tie,dir:t.dir}; })};}),
+        tx:t.tx,ty:t.ty,sw:t.sw,tie:!!t.tie,nosw:!!t.nosw,dir:t.dir}; })};}),
     WIRES:WIRES.map(function(w){ return {a:w.a,b:w.b,bias:w.bias||[0,0]}; }),
     SRC:SRC.slice(), KIND:TOPO.kind }; }
 function load(s){ clearArr(ORDER); clearArr(WIRES); SEQ=0;
   for(var _k in DEV) delete DEV[_k];
   s.DEV.forEach(function(d){ var o=JSON.parse(JSON.stringify(d));
     o.terms.forEach(function(t){ if(!t.dir) t.dir=[0,1]; }); addDev(o); });
+  ORDER.forEach(function(id){ var d=DEV[id];
+    if(d.type==='sw'&&d.closed===undefined) d.closed=true;
+    if(d.type==='tr'||d.type==='bus') d.terms.forEach(function(t){ t.nosw=true; }); });
   (s.WIRES||[]).forEach(function(w){ WIRES.push({id:'w'+(++SEQ),a:w.a,b:w.b,bias:w.bias||[0,0]}); });
   SRC=(s.SRC&&s.SRC.length?s.SRC:['SUBA','SUBB']).filter(function(x){ return !!DEV[x]; });
   SEL=null; UNDO=[]; FAULT=null; DEADSRC={};
@@ -1812,12 +2085,42 @@ function load(s){ clearArr(ORDER); clearArr(WIRES); SEQ=0;
     SCENES=scenesDefault().filter(function(x){ return !!sceneTarget(x); }); fillScenes();
   }
   paint(); }
+/* ══════════ 待放置元件模式：按快捷键（C 循环）选元件，再在画布上单击落子 ══════════
+   放置模式下光标变十字；Esc 或再按一次 C 退出。 */
+var PLACE=null, PLACE_LIST=['sub','sta','ld','tr','sw','bus'],
+    PLACE_NAME={sub:'变电站',sta:'开关站',ld:'配电房 / 负荷',tr:'变压器',sw:'开关',bus:'母线'};
+function setPlace(k){ PLACE=k||null;
+  SVG.classList.toggle('placing',!!PLACE);
+  var box=document.getElementById('palette');
+  if(box) [].forEach.call(box.querySelectorAll('.pitem'),function(b){
+    b.classList.toggle('pick',!!PLACE&&b.dataset.k===PLACE); });
+  if(PLACE){ setNav('pal');
+    fmsg('待放置：'+PLACE_NAME[PLACE]+' —— 在画布上单击落子（按 C / Shift+C 前后换元件，Esc 取消）。'); }
+}
+function cyclePlace(step){ var i=PLACE_LIST.indexOf(PLACE);
+  i=(i<0)?(step>0?0:PLACE_LIST.length-1):((i+step)%PLACE_LIST.length+PLACE_LIST.length)%PLACE_LIST.length;
+  setPlace(PLACE_LIST[i]); }
+function placeAt(ev){ if(!PLACE) return;
+  var w=toWorldXY(ev.clientX,ev.clientY);
+  var k=PLACE; setPlace(null);
+  addPalette(k, Math.round(w[0]/5)*5, Math.round(w[1]/5)*5); }
+
 /* ══════════ 元件库：拖拽 / 点击搭网 ══════════ */
 var UIDN=0;
 function uid(pfx){ var k; do{ k=pfx+(++UIDN); }while(DEV[k]); return k; }
 function nextName(pfx){ var mx=0, re=new RegExp('^'+pfx+'(\\d+)$');
   ORDER.forEach(function(i){ var m=re.exec(DEV[i]&&DEV[i].name); if(m){ var v=+m[1]; if(v>mx) mx=v; } });
   return pfx+(mx+1); }
+/* 配电房落点附近若有「用户出线 / 出线间隔」端子，自动挂上去（与预设模板的表现一致） */
+function autoAttachLoad(id,x,y){
+  var best=null,bd=1e9;
+  ORDER.forEach(function(k){ var h=DEV[k]; if(k===id) return;
+    if(h.type!=='sta'&&h.type!=='sub') return;
+    h.terms.forEach(function(t){ if(t.k!=='ld'&&t.k!=='line') return;
+      var p=tp(h,t), dd=(p[0]-x)*(p[0]-x)+(p[1]-y)*(p[1]-y);
+      if(dd<bd){ bd=dd; best={d:k,t:t.id}; } }); });
+  if(best&&bd<=150*150){ var d=DEV[id]; d.host=best.d; d.hterm=best.t; d.moved=0; return best; }
+  return null; }
 function addPalette(kind,x,y){
   push(); var id;
   if(kind==='sub'){
@@ -1825,17 +2128,29 @@ function addPalette(kind,x,y){
     if(SRC.indexOf(id)<0) SRC.push(id);
   } else if(kind==='sta'){
     id=uid('NK'); mkSta(id,nextName('开关站'),x,y,0,'a'); mkLoads(id);
+  } else if(kind==='tr'){
+    id=uid('NT'); addDev({id:id,type:'tr',name:nextName('变压器'),x:x,y:y,rot:0,flip:0,pet:'a',
+      color:COL.live,host:null,hterm:null,terms:trTerms()});
+  } else if(kind==='sw'){
+    id=uid('NW'); addDev({id:id,type:'sw',name:nextName('开关'),x:x,y:y,rot:0,flip:0,pet:'a',
+      color:COL.live,closed:true,host:null,hterm:null,terms:swTerms()});
+  } else if(kind==='bus'){
+    id=uid('NB'); addDev({id:id,type:'bus',name:nextName('母线'),x:x,y:y,rot:0,flip:0,pet:'a',
+      color:COL.live,host:null,hterm:null,terms:busTerms()});
   } else {
     id=uid('NL'); var nm=nextName('配电房');
     var m=/^配电房(\d+)$/.exec(nm); if(m) LDN=Math.max(LDN,+m[1]);
     addDev({id:id,type:'ld',name:nm,x:x,y:y,rot:0,flip:0,pet:'a',color:COL.sub,
       host:null,hterm:null,terms:ldTerms()});
+    autoAttachLoad(id,x,y);
   }
-  placeLoads(); SEL={kind:'dev',id:id};
+  placeLoads(); setSelDev([id]);
   simulate(); paint(); focusSel(); renderScnList();
+  var at=DEV[id].host?DEV[DEV[id].host]:null;
   fmsg('已加入 '+DEV[id].name+(kind==='ld'
-    ? '：把它的「进线」端子拖到开关站的用户出线端子即完成接线（未接线的负荷按失电计）。'
-    : '：从端子拖到另一个端子即可接线。'));
+    ? (at? ('：已自动接到 '+at.name+' 的用户出线间隔（可拖动微调）。')
+         : '：把它的「进线」端子拖到开关站的用户出线端子即完成接线（未接线的负荷按失电计）。')
+    : '：从端子拖到另一个端子即可接线（松手会自动吸附最近的端子）。'));
 }
 (function(){
   var PALEL=document.getElementById('palette'), STAGE=document.querySelector('.stage'), WAS_DRAG=false;
@@ -1872,8 +2187,12 @@ document.getElementById('bBlank').onclick=function(){
 
 /* ================= 通用动作 ================= */
 var OUT=true;
-function actAllClose(){ push(); ORDER.forEach(function(id){ DEV[id].terms.forEach(function(t){ t.sw=true; }); }); paint(); }
-function actAllOpen(){ push(); ORDER.forEach(function(id){ DEV[id].terms.forEach(function(t){ t.sw=false; }); }); paint(); }
+function actAllClose(){ push(); ORDER.forEach(function(id){ var d=DEV[id];
+  if(d.type==='sw'){ d.closed=true; return; }
+  d.terms.forEach(function(t){ if(!t.nosw) t.sw=true; }); }); paint(); }
+function actAllOpen(){ push(); ORDER.forEach(function(id){ var d=DEV[id];
+  if(d.type==='sw'){ d.closed=false; return; }
+  d.terms.forEach(function(t){ if(!t.nosw) t.sw=false; }); }); paint(); }
 function actReset(){
   if(TOPO.kind==='custom'&&ORDER.length&&!confirm('复位会清空当前自建网架，确定？')) return;
   UNDO=[]; FAULT=null; DEADSRC={}; DEMO.step=0; DEMO.playing=false; DEMO.paused=false;
@@ -1887,10 +2206,23 @@ function actExport(){ var b=new Blob([JSON.stringify(snap(),null,1)],{type:'appl
   var a=document.createElement('a'); a.href=URL.createObjectURL(b);
   a.download=(TOPO.name||'拓扑')+'.json'; a.click(); }
 function actImport(){ document.getElementById('fImport').click(); }
-function actDelSel(){ if(!SEL) return; if(SEL.kind==='wire') delWire(SEL.id); else delDev(SEL.id); }
-function actCopy(){ var c=copySel(); fmsg(c?('已复制 '+DEV[SEL.id].name+'（含其配电房）'):'请先选中一个图元再复制。'); }
+function actDelSel(){
+  var ws=selWireIds(), ids=selIds();
+  if(!ws.length&&!ids.length) return;
+  if(!ws.length&&ids.length===1){ delDev(ids[0]); return; }
+  push();
+  ws.forEach(function(w){ for(var i=WIRES.length-1;i>=0;i--) if(WIRES[i].id===w) WIRES.splice(i,1); });
+  ids.forEach(function(id){ if(!DEV[id]) return;
+    for(var i=WIRES.length-1;i>=0;i--) if(WIRES[i].a.d===id||WIRES[i].b.d===id) WIRES.splice(i,1);
+    delete DEV[id];
+    for(var j=ORDER.length-1;j>=0;j--) if(ORDER[j]===id) ORDER.splice(j,1);
+    if(FAULT&&FAULT.kind==='dev'&&FAULT.id===id) FAULT=null; });
+  clearSel(); paint();
+  fmsg('已删除 '+(ids.length?ids.length+' 个图元':'')+(ws.length?(ids.length?' · ':'')+ws.length+' 条电缆':'')); }
+function actCopy(){ var c=copySel(); var n=selIds().length;
+  fmsg(c?(n>1?('已复制 '+n+' 个图元（含各自的配电房）'):('已复制 '+DEV[selIds()[0]].name+'（含其配电房）')):'请先选中图元再复制。'); }
 function actPaste(){ if(!CLIP){ fmsg('剪贴板为空：先用 Ctrl+C 复制一个图元。'); return; }
-  pasteClip(40,40); fmsg('已粘贴 '+DEV[SEL.id].name); }
+  pasteClip(40,40); fmsg('已粘贴 '+selIds().length+' 个图元'); }
 function actDup(){ if(copySel()) pasteClip(40,40); }
 function actZoomIn(){ zoomCenter(1.2); } function actZoomOut(){ zoomCenter(1/1.2); }
 function actZoomFit(){ zoomFit(); } function actZoom100(){ zoom100(); }
@@ -1950,18 +2282,34 @@ function setAllTie(v){ OUT=!!v;
   syncModeBtn(); paint(); syncMenu(); }
 function toggleFocus(){ var m=document.getElementById('mid'); m.classList.toggle('focus');
   syncMenu(); setTimeout(function(){ applyVB(); },60); }
-function rotSel(deg){ if(!SEL||SEL.kind!=='dev') return; var d=DEV[SEL.id];
-  push(); if(d.type==='sta'){ d.flip=d.flip?0:1; placeLoads(); } else d.rot+=deg; paint(); }
+/* 空格 = 把选中的图元转 90°（Shift+空格 = 反向）；开关站 = 上下镜像；变电站符号保持水平 */
+function rotSel90(deg){
+  var ids=selIds(); if(!ids.length) return;
+  push(); var st=false, n=0;
+  ids.forEach(function(id){ var d=DEV[id]; if(!d||d.type==='sub') return;
+    if(d.type==='sta'){ d.flip=d.flip?0:1; st=true; }
+    else d.rot=(((d.rot||0)+deg)%360+360)%360;
+    n++; });
+  if(st) placeLoads();
+  placementDone(n, deg, st); }
+function placementDone(n,deg,st){ paint();
+  if(n) fmsg('已把 '+n+' 个图元旋转 '+(deg>0?'+':'-')+'90°'+(st?'（开关站 = 上下镜像）':'')+'。');
+  else fmsg('变电站符号保持水平：请用右键菜单「左右镜像 / 旋转」，或选中开关 / 变压器 / 母线后再按空格。'); }
+function rotSel(deg){ var ids=selIds(); if(!ids.length) return;
+  push(); var st=false;
+  ids.forEach(function(id){ var d=DEV[id]; if(!d) return;
+    if(d.type==='sta'){ d.flip=d.flip?0:1; st=true; } else d.rot+=deg; });
+  if(st) placeLoads(); paint(); }
 
 /* ---- 复制 / 粘贴 ---- */
 var CLONE=0;
-function copySel(){ if(!SEL||SEL.kind!=='dev') return null;
-  var ids=[SEL.id];
-  ORDER.forEach(function(k){ if(DEV[k].host===SEL.id) ids.push(k); });
+function copySel(){ var sel=selIds(); if(!sel.length) return null;
+  var ids=sel.slice();
+  ORDER.forEach(function(k){ if(sel.indexOf(DEV[k].host)>=0&&ids.indexOf(k)<0) ids.push(k); });
   CLIP={ devs:ids.map(function(i){ return JSON.parse(JSON.stringify(DEV[i])); }),
          wires:WIRES.filter(function(w){ return ids.indexOf(w.a.d)>=0&&ids.indexOf(w.b.d)>=0; })
                      .map(function(w){ return {a:{d:w.a.d,t:w.a.t},b:{d:w.b.d,t:w.b.t}}; }) };
-  CLIP.ax=DEV[SEL.id].x; CLIP.ay=DEV[SEL.id].y;      /* 剪贴板锚点：供「粘贴到此处」定位 */
+  CLIP.ax=DEV[ids[0]].x; CLIP.ay=DEV[ids[0]].y;      /* 剪贴板锚点：供「粘贴到此处」定位 */
   return CLIP; }
 function pasteClip(dx,dy){ if(!CLIP) return;
   push(); var map={};
@@ -1971,7 +2319,7 @@ function pasteClip(dx,dy){ if(!CLIP) return;
     if(o.host) o.host=map[o.host]||o.host;
     o.x+=dx; o.y+=dy; addDev(o); });
   CLIP.wires.forEach(function(w){ wire([map[w.a.d],w.a.t],[map[w.b.d],w.b.t]); });
-  SEL={kind:'dev',id:map[CLIP.devs[0].id]};
+  setSelDev(CLIP.devs.map(function(d){ return map[d.id]; }).filter(function(v){ return !!v; }));
   placeLoads(); paint(); }
 
 /* ================= 对话框 ================= */
@@ -2108,13 +2456,18 @@ function showKeys(){ openDlg('快捷键一览',
   '<tr><td class="k">方向键</td><td>微调选中图元 5 px（吸附步长）</td></tr>'+
   '<tr><td class="k">Shift + 方向键</td><td>微调 1 px（精调，不吸附）</td></tr>'+
   '<tr><td class="k">R / Shift + R</td><td>旋转选中图元 ±15°（开关站 = 上下镜像）</td></tr>'+
-  '<tr><td class="k">Esc</td><td>关闭菜单 / 取消选中</td></tr>'+
+  '<tr><td class="k">空格</td><td>把选中图元旋转 90°（Shift + 空格 = 反向）；<b>没有选中时</b>按住空格 = 小手平移</td></tr>'+
+  '<tr><td class="k">C / Shift + C</td><td>轮换「待放置」元件（变电站 → 开关站 → 配电房 → 变压器 → 开关 → 母线），再在画布单击落子</td></tr>'+
+  '<tr><td class="k">Esc</td><td>关闭菜单 / 取消待接 / 退出放置模式 / 取消选中</td></tr>'+
   '</table>'+
   '<h4>视图 · 抓手</h4><table>'+
-  '<tr><td class="k">空格（按住）</td><td>临时切「小手」抓手模式，拖动画布平移；松手回到选择模式</td></tr>'+
+  '<tr><td class="k">空格（按住）</td><td>没有选中图元时 = 临时切「小手」抓手模式，拖动画布平移；松手回到选择模式</td></tr>'+
   '<tr><td class="k">缩放条「抓手」/ 视图菜单</td><td>锁定抓手模式（按钮变蓝），再按一次解锁</td></tr>'+
   '<tr><td class="k">滚轮 / + / −</td><td>缩放画布（以光标为中心）</td></tr>'+
   '<tr><td class="k">空白处拖动</td><td>平移画布（抓手模式下在图元上拖动也是平移）</td></tr>'+
+  '<tr><td class="k">框选（左 → 右）</td><td>CAD「窗口选择」：<b>完全框住</b>的图元 / 电缆才被选中（蓝色实线框）</td></tr>'+
+  '<tr><td class="k">框选（右 → 左）</td><td>CAD「交叉选择」：<b>碰到就选</b>（绿色虚线框）；Shift + 框选 = 追加</td></tr>'+
+  '<tr><td class="k">Shift + 单击</td><td>加选 / 减选图元；Ctrl + A 全选</td></tr>'+
   '<tr><td class="k">F</td><td>适应窗口</td></tr>'+
   '<tr><td class="k">Z</td><td>专注画布（隐藏两侧栏，再按恢复）</td></tr>'+
   '<tr><td class="k">V / G</td><td>显示潮流箭头 / 主干辉光</td></tr>'+
@@ -2132,7 +2485,8 @@ function showKeys(){ openDlg('快捷键一览',
   '<tr><td class="k">拖动图元</td><td>移动位置（5 px 吸附）</td></tr>'+
   '<tr><td class="k">拖动电缆</td><td>调整走线位置</td></tr>'+
   '<tr><td class="k">点击开关</td><td>分闸 / 合闸</td></tr>'+
-  '<tr><td class="k">拖动端子</td><td>拉到另一个端子完成接线</td></tr>'+
+  '<tr><td class="k">拖动端子</td><td>拉到另一个端子完成接线（松手自动吸附最近端子；同一个图元的两个端子不能互接）</td></tr>'+
+  '<tr><td class="k">点击开关框体</td><td>开关分 / 合（空心=分、实心=合）；开关站母联、间隔断路器同此画法</td></tr>'+
   '<tr><td class="k">右键图元 / 电缆</td><td>菜单：复制 / 原地复制 / 粘贴 / 镜像 / 旋转 / 开关全合全分 / 设为故障点 / 重命名 / 删除</td></tr>'+
   '<tr><td class="k">右键空白画布</td><td>菜单：粘贴到此处 / 适应窗口 / 潮流箭头 / 主干辉光 / 复位运行方式</td></tr>'+
   '</table>'); }
@@ -2142,7 +2496,11 @@ function showDoc(){ openDlg('接线约定 / 图元画法',
   '<tr><td class="k">开关站</td><td><b>单母线分段环网柜</b>（不旋转，可上下镜像）：Ⅰ段母线（蓝）与 Ⅱ段母线（青）共线横置，中间为<b>母联</b>（分段开关：横置长条方框，空心=分位、实心=合位）；母线外端为<b>母线终端</b>（端头实心方块）。每段母线 4 个间隔：<b>2 回用户出线（朝外）+ 2 回环网间隔（朝内，一进一出）</b>。断路器<b>实心=合位、空心=分位</b></td></tr>'+
   '<tr><td class="k">配电房（负荷）</td><td><b>每一回用户出线间隔 = 一个独立负荷</b>，各画<b>一个三角形</b>（顶点背向开关站、单电源）；符号取所属母线段颜色（Ⅰ 段蓝 / Ⅱ 段青），<b>该回路失电即转灰</b></td></tr>'+
   '<tr><td class="k">终端</td><td><b>电缆终端头</b>=电缆末端的端子（白环 + 实心圆）；<b>母线终端</b>=母线末端的实心小方块（端头封堵）</td></tr>'+
-  '<tr><td class="k">联络开关</td><td>橙色虚线，常开（两个环网 / 两片花瓣之间的联络）</td></tr>'+
+  '<tr><td class="k">变压器</td><td><b>双绕组变压器</b>：两个<b>相交</b>的圆（GB/T 4728.4）；<b>一次侧 / 二次侧各 1 个端子</b>，属导体、恒通（分合由两侧开关承担）。可用于自建网架里的 10/0.4 kV 配变、联络变</td></tr>'+
+  '<tr><td class="k">开关</td><td><b>长方形框</b>：<b>空心 = 分位、实心 = 合位</b>；A / B 两端子，单状态分合（点框体即分 / 合）。可<b>旋转 0° / 90°</b> 竖装，用作分段开关、联络开关、隔离开关</td></tr>'+
+  '<tr><td class="k">母线</td><td><b>加粗导体</b>：左端 / 右端 / 中间引下共 <b>3 个端子</b>，恒通不可分断；用于自建单母线 / 单母线分段接线</td></tr>'+
+  '<tr><td class="k">终端</td><td><b>电缆终端头</b>=电缆末端的端子（白环 + 实心圆）；<b>母线终端</b>=母线末端的实心小方块（端头封堵）</td></tr>'+
+  '<tr><td class="k">联络开关</td><td>橙色虚线，常开（两个环网 / 两片花瓣之间的联络）；自建网架里可右键开关 →「设为常开联络开关」</td></tr>'+
   '</table>'+
   '<h4>双花瓣接线（教科书方式）</h4><table>'+
   '<tr><td class="k">布置</td><td>两座变电站分列左右，中间是<b>两排共 9 座开关站</b>：上排 5 座（用户朝上）、下排 4 座（用户朝下），环网间隔朝两排之间的通道</td></tr>'+
@@ -2230,9 +2588,21 @@ document.addEventListener('keydown',function(e){
   if(mod&&k==='v'){ e.preventDefault(); actPaste(); return; }
   if(mod&&k==='d'){ e.preventDefault(); actDup(); return; }
   if(mod&&k==='s'){ e.preventDefault(); actSaveLocal(); return; }
-  if(e.code==='Space'){ if(!e.repeat){ e.preventDefault(); SPACE=true; setPan(true); } return; }
+  if(mod&&k==='a'){ e.preventDefault(); actSelAll(); return; }
+  /* 空格：有选中图元 → 旋转 90°（Shift 反向）；没有选中 → 按住切「小手」平移 */
+  if(e.code==='Space'){
+    if(!e.repeat){
+      e.preventDefault();
+      if(selIds().length){ rotSel90(e.shiftKey?-90:90); return; }
+      SPACE=true; setPan(true);
+    }
+    return; }
   if(e.key==='Delete'||e.key==='Backspace'){ e.preventDefault(); actDelSel(); return; }
-  if(e.key==='Escape'){ hideCtx(); closeMenu(); closeDlg(); return; }
+  if(e.key==='Escape'){ hideCtx(); closeMenu(); closeDlg();
+    if(PLACE){ setPlace(null); fmsg('已退出放置模式。'); return; }
+    if(PEND||drag){ PEND=null; drag=null; PREV=null; LINK_HOVER=null; paint();
+      fmsg('已取消接线。'); return; }
+    if(SEL||SELW.length){ clearSel(); paint(); fmsg('已取消选择。'); return; } return; }
   if(e.key==='F1'||e.key==='?'){ e.preventDefault(); showKeys(); return; }
   if(e.key==='Tab'){ e.preventDefault(); setRTab(RTAB==='sel'?'act':'sel'); return; }
   /* 方向键：微调选中图元 */
@@ -2247,6 +2617,8 @@ document.addEventListener('keydown',function(e){
   if(k==='p'){ document.getElementById('bPlay').click(); return; }
   if(k==='n'){ document.getElementById('bStep').click(); return; }
   if(k==='0'){ document.getElementById('bClearFault').click(); return; }
+  /* 元件库：C / Shift+C 前后轮换「待放置」元件（再按回车前先在画布单击落子） */
+  if(k==='c'){ e.preventDefault(); cyclePlace(e.shiftKey?-1:1); return; }
   /* 左栏页 / 右栏标签 / 显示开关 */
   if(k==='['||k===']'){ e.preventDefault(); navCycle(k===']'?1:-1); return; }
   if(k==='v'){ actFlow(); return; }
@@ -2309,9 +2681,15 @@ function ctxAct(a){
     else if(a==='rotcw'){ push(); d.rot+=15; paint(); }
     else if(a==='rotccw'){ push(); d.rot-=15; paint(); }
     else if(a==='rot0'){ push(); d.rot=0; paint(); }
-    else if(a==='closesw'){ push(); d.terms.forEach(function(t){ t.sw=true; }); paint(); }
-    else if(a==='opensw'){ push(); d.terms.forEach(function(t){ t.sw=false; }); paint(); }
-    else if(a==='fault'){ SEL={kind:'dev',id:d.id}; setFault(); }
+    else if(a==='closesw'){ push();
+      if(d.type==='sw') d.closed=true; else d.terms.forEach(function(t){ t.sw=true; }); paint(); }
+    else if(a==='opensw'){ push();
+      if(d.type==='sw') d.closed=false; else d.terms.forEach(function(t){ t.sw=false; }); paint(); }
+    else if(a==='swx'){ push(); d.closed=(d.closed===false); paint(); }
+    else if(a==='tieSw'||a==='untieSw'){ var tk=(a==='tieSw'); push();
+      d.terms.forEach(function(t){ t.tie=tk; }); if(tk) d.closed=false; paint(); syncModeBtn();
+      fmsg(tk?'已设为常开联络开关（分位、橙色虚线框）。':'已取消常开联络标记。'); }
+    else if(a==='fault'){ setSelDev([d.id]); setFault(); }
     else if(a==='rename'){ var n=prompt('图元名称',d.name); if(n){ push(); d.name=n; paint(); } }
     else if(a==='del') delDev(d.id);
   } else if(CTXWIRE!=null){ var w=findWire(CTXWIRE); if(!w) return;
@@ -2325,7 +2703,7 @@ function ctxAct(a){
       paint(); syncModeBtn();
       fmsg(on?('已设为常开联络：'+kname(w.a.d+':'+w.a.t)+' ↔ '+kname(w.b.d+':'+w.b.t)+'（两端分位）')
              :'已取消常开联络标记（开关位置不变）。'); }
-    else if(a==='fault'){ SEL={kind:'wire',id:w.id}; setFault(); }
+    else if(a==='fault'){ setSelWire(w.id); setFault(); }
     else if(a==='del') delWire(w.id);
   }
 }
@@ -3113,6 +3491,9 @@ function ownerLabel(d){
   if(d.type==='sub') return TOPO.secColor
     ?(d.id==='SUBB'?'电源 · 花瓣Ⅱ（变电站2）':'电源 · 花瓣Ⅰ（变电站1）'):'电源 · 变电站';
   if(d.type==='sta') return TOPO.secColor?'两花瓣共用（Ⅰ / Ⅱ 段母线）':'Ⅰ / Ⅱ 段母线';
+  if(d.type==='tr') return '变压器（双绕组）';
+  if(d.type==='sw') return '开关 · '+(swClosed(d.id)?'合位':'分位');
+  if(d.type==='bus') return '母线（加粗导体）';
   if(d.type==='ld'){ var t=findTermObj(d.host,d.hterm), sec=(t&&t.sec)||1;
     return TOPO.secColor?(sec===2?'负荷 · 花瓣Ⅱ（接开关站 Ⅱ段）':'负荷 · 花瓣Ⅰ（接开关站 Ⅰ段）')
       :('负荷 · '+(sec===2?'Ⅱ':'Ⅰ')+'段母线'); }
@@ -3181,6 +3562,21 @@ function panels(){
     document.getElementById('hint').textContent='图元 '+ORDER.length+' 个 · 连线 '+WIRES.length+' 条';
     return;
   }
+  var nSel=selIds().length, wsSel=selWireIds().length;
+  if(nSel>1||(nSel&&wsSel)||wsSel>1){
+    var names=selIds().map(function(i){ return DEV[i].name; });
+    box.innerHTML='<div class="kv"><b>已选中 '+nSel+' 个图元</b>'+(wsSel?' · '+wsSel+' 条电缆':'')+'</div>'+
+      '<div class="kv" style="max-height:96px;overflow:auto">'+names.slice(0,40).map(esc).join(' · ')+
+      (names.length>40?' …':'')+'</div>'+
+      '<div class="row"><button class="mini" data-act="rot-">旋转 -15°</button>'+
+      '<button class="mini" data-act="rot+">旋转 +15°</button>'+
+      '<button class="mini" data-act="copy">复制</button><button class="mini" data-act="dup">原地复制</button>'+
+      '<button class="mini" data-act="del">删除选中</button>'+
+      '<button class="mini" data-act="none">取消选择</button></div>'+
+      '<div class="kv">拖动其中任意一个图元即<b>整体移动</b>（挂在变电站 / 开关站上的配电房会跟随）。</div>';
+    document.getElementById('hint').textContent='图元 '+ORDER.length+' 个 · 连线 '+WIRES.length+' 条';
+    syncModeBtn(); return;
+  }
   if(!SEL){ box.innerHTML='<div class="kv">未选中。<b>拖动图元</b>移动 · <b>拖动电缆</b>可改走线位置 · 点开关分/合 · 从端子拖到端子接线 · <b>右键</b>弹菜单。</div>'; }
   else if(SEL.kind==='wire'){
     box.innerHTML='<div class="kv">已选中电缆 <i>'+SEL.id+'</i></div>'+
@@ -3204,12 +3600,27 @@ function panels(){
         ? ('Ⅰ段母线：'+(secLive(d.id,1)?'<i class="ok">带电</i>':'<i class="bad">失电</i>')+
            ' · Ⅱ段母线：'+(secLive(d.id,2)?'<i class="ok">带电</i>':'<i class="bad">失电</i>')+
            ' · 母联 '+(T(d.id,'bt')&&T(d.id,'bt').sw?'<i class="ok">合</i>':'<i class="warn">分</i>'))
+        : d.type==='sw'
+        ? ('开关：'+(swClosed(d.id)?'<i class="ok">合位</i>（两端接通）':'<i class="warn">分位</i>（两端断开）'))
+        : d.type==='tr'
+        ? ('变压器：'+(EN[d.id+':bus']?'<i class="ok">带电</i>':'<i class="bad">失电</i>')+'（双绕组，导体恒通）')
+        : d.type==='bus'
+        ? ('母线导体：'+(EN[d.id+':bus']?'<i class="ok">带电</i>':'<i class="bad">失电</i>')+'（3 个端子恒通）')
         : ('母线：'+(EN[d.id+':bus']?'<i class="ok">带电</i>':'<i class="bad">失电</i>')))+
       ' · 所属：'+ownerLabel(d)+'</div>';
-    if(d.type!=='ld'){
+    if(d.type!=='ld'&&d.type!=='tr'&&d.type!=='bus'){
       h+='<div class="kv" style="margin:5px 0 2px">开关清单（动作 / 通断分析）</div>'+
          '<div class="swhd"><i>名称</i><i>状态</i><i>动作</i><i>影响</i></div>';
+      if(d.type==='sw'){
+        var sOn=!!d.closed, sLost=impactedSw(d.id);
+        var sNote=sOn?(sLost.length?'断开将失电 '+sLost.length+' 个配电房':'断开后仍可由另一路供电'):'已分位';
+        h+='<div class="sw"><span class="nm"><b>开关（单状态）</b></span>'+
+           '<span class="bdg '+(sOn?'on':'off')+'">'+(sOn?'合':'分')+'</span>'+
+           '<span><button class="mini" data-act="swx">'+(sOn?'分闸':'合闸')+'</button></span>'+
+           '<span class="im'+((sOn&&sLost.length)?' warn':'')+'" title="'+esc(sNote)+'">'+esc(sNote)+'</span></div>';
+      } else {
       d.terms.forEach(function(t){
+        if(t.nosw) return;                       /* 导体端子（母线 / 变压器 / 开关 B 端）不分合 */
         var lost=impacted(d.id,t.id);
         var note = t.sw ? (lost.length? '断开将失电 '+lost.length+' 个配电房' : '断开后仍可由另一路供电')
                         : (t.tie?'常开联络开关':(isIso(d.id,t.id)?'已隔离':'已分位'));
@@ -3218,6 +3629,7 @@ function panels(){
            '<span><button class="mini" data-act="sw" data-t="'+t.id+'">'+(t.sw?'分闸':'合闸')+'</button></span>'+
            '<span class="im'+(t.sw&&lost.length?' warn':'')+'" title="'+esc(note)+'">'+esc(note)+'</span></div>';
       });
+      }
     }
     box.innerHTML=h;
   }
@@ -3227,9 +3639,16 @@ function panels(){
 var pSel=document.getElementById('pSel');
 pSel.addEventListener('click',function(ev){
   var b=ev.target.closest?ev.target.closest('button[data-act]'):null;
-  if(!b||!SEL||SEL.kind!=='dev') return;
+  if(!b) return;
+  if(b.dataset.act==='rot-'||b.dataset.act==='rot+'){ rotSel(b.dataset.act==='rot+'?15:-15); return; }
+  if(b.dataset.act==='copy'){ actCopy(); return; }
+  if(b.dataset.act==='dup'){ actDup(); return; }
+  if(b.dataset.act==='del'&&selIds().length>1){ actDelSel(); return; }
+  if(b.dataset.act==='none'){ clearSel(); paint(); return; }
+  if(!SEL||SEL.kind!=='dev') return;
   var d=DEV[SEL.id], a=b.dataset.act;
   if(a==='sw') toggle(SEL.id,b.dataset.t);
+  else if(a==='swx'){ push(); d.closed=(d.closed===false); paint(); }
   else if(a==='del') delDev(SEL.id);
   else if(a==='rot-'||a==='rot+'){ push(); d.rot+=(a==='rot+'?15:-15); paint(); }
   else if(a==='mirror'){ push(); d.rot=(d.rot%360===180)?0:180; paint(); }
@@ -3273,7 +3692,10 @@ function deviceState(id){ var d=DEV[id]; if(!d) return 'DEENERGIZED';
   if(d.type==='ld') return ldLive(id)?'ENERGIZED':'DEENERGIZED';
   if(d.type==='sta') return (secLive(id,1)||secLive(id,2))?'ENERGIZED':'DEENERGIZED';
   return liveOf(id)?'ENERGIZED':'DEENERGIZED'; }
-function switchState(id,tid){ var t=findTermObj(id,tid); if(!t) return null;
+function switchState(id,tid){ var d=DEV[id];
+  if(d&&d.type==='sw'){ var on=swClosed(id), ti=d.terms.some(function(x){ return x.tie; });
+    return ti?(on?'TIE_CLOSED':'SWITCH_OPEN'):(on?'SWITCH_CLOSED':'SWITCH_OPEN'); }
+  var t=findTermObj(id,tid); if(!t) return null;
   if(t.tie) return t.sw?'TIE_CLOSED':'SWITCH_OPEN';
   return t.sw?'SWITCH_CLOSED':'SWITCH_OPEN'; }
 function sandboxStatus(){
@@ -3354,7 +3776,9 @@ window.__api={snap:snap,load:load,DEV:DEV,WIRES:WIRES,simulate:simulate,T:T,impa
   liveLoads:liveLoads,deadLoads:deadLoads,
   dev:function(){return DEV;},wires:function(){return WIRES;},
   TOPO:function(){return TOPO;},loadTopo:loadTopo,zoomFit:zoomFit,Z:function(){return Z;},
-  sel:function(){return SEL;},selSet:function(k,id){SEL={kind:k,id:id};},copy:actCopy,paste:actPaste,zoomFit2:zoomFit,
+  sel:function(){return SEL;},selSet:function(k,id){ if(k==='dev') setSelDev([id]); else setSelWire(id); },
+  selIds:selIds,selWires:selWireIds,selSetMulti:function(ids,ws){ setSelDev(ids,ws); },selAll:actSelAll,
+  band:function(){ return BAND; },devBounds:devBounds,copy:actCopy,paste:actPaste,zoomFit2:zoomFit,
   pan:function(){ return {space:SPACE,lock:PAN_LOCK}; },panSet:function(on){ PAN_LOCK=!!on; setPan(panOn());
     var b=document.getElementById('zPan'); if(b) b.classList.toggle('on',PAN_LOCK); },
   nav:function(){ return NAV_P; },navSet:setNav,rtab:function(){ return RTAB; },rtabSet:setRTab,
