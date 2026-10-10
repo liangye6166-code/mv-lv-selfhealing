@@ -44,12 +44,50 @@
   .ctl input[type=range]{width:104px;accent-color:#1d4ed8}
   .ctl b{color:var(--ink);font-size:12px;min-width:32px;text-align:right}
   .hint{color:var(--muted);font-size:11.5px;margin-left:auto;white-space:nowrap}
-  .mid{flex:1;min-height:0;display:grid;grid-template-columns:292px minmax(0,1fr) 338px;gap:9px}
+  .mid{flex:1;min-height:0;display:grid;grid-template-columns:340px minmax(0,1fr) 338px;gap:9px}
   .mid.focus{grid-template-columns:minmax(0,1fr)}
   .mid.focus .side{display:none}
   .side{display:flex;flex-direction:column;gap:9px;min-height:0;overflow:auto;padding-right:2px}
   .side::-webkit-scrollbar{width:8px}
   .side::-webkit-scrollbar-thumb{background:#d3dce7;border-radius:4px}
+  /* ── 左栏：竖向图标导航（元件库 / 网架结构 / 故障演练） ── */
+  .side.sidenav{flex-direction:column;gap:0;padding:0;overflow:hidden}
+  .navwrap{flex:1;min-height:0;display:flex;align-items:stretch}
+  .rail{flex:0 0 48px;display:flex;flex-direction:column;gap:4px;padding:7px 4px;
+    background:linear-gradient(180deg,#f7fafd,#eaf0f8);border:1px solid var(--line);border-right:0;
+    border-radius:11px 0 0 11px}
+  .rail .rb{position:relative;display:flex;flex-direction:column;align-items:center;gap:3px;
+    padding:8px 1px 7px;border:0;background:none;border-radius:9px;color:#5b6b7f;
+    font-size:9.5px;line-height:1.2;cursor:pointer;white-space:normal}
+  .rail .rb svg{width:19px;height:19px;fill:none;stroke:currentColor;stroke-width:1.5;
+    stroke-linecap:round;stroke-linejoin:round}
+  .rail .rb:hover{background:#e2ebf9;color:#1d4ed8}
+  .rail .rb.on{background:#fff;color:#1d4ed8;font-weight:700;box-shadow:0 1px 4px rgba(18,38,63,.1)}
+  .rail .rb.on::after{content:'';position:absolute;left:-4px;top:50%;transform:translateY(-50%);
+    width:3px;height:20px;border-radius:0 3px 3px 0;background:#1d4ed8}
+  .railbody{flex:1;min-width:0;display:flex;flex-direction:column;gap:9px;overflow:auto;
+    padding:8px 5px 8px 9px}
+  .railbody::-webkit-scrollbar{width:8px}
+  .railbody::-webkit-scrollbar-thumb{background:#d3dce7;border-radius:4px}
+  .navp{display:none}
+  .navp.on{display:block}
+  /* ── 右栏：横向标签页（元件属性 / 动作过程） ── */
+  .rtabs{flex:0 0 auto;display:flex;gap:4px;padding:4px;background:#eaf0f8;
+    border:1px solid var(--line);border-radius:11px}
+  .rtabs .rtb{position:relative;flex:1;border:0;background:none;border-radius:8px;padding:6px 8px;
+    font-size:12.5px;color:#5b6b7f;cursor:pointer;white-space:nowrap}
+  .rtabs .rtb:hover{background:#dfe9f7;color:#1d4ed8}
+  .rtabs .rtb.on{background:#fff;color:#12263f;font-weight:700;box-shadow:0 1px 4px rgba(18,38,63,.11)}
+  .rtabs .tdot{position:absolute;top:5px;right:6px;width:6px;height:6px;border-radius:50%;
+    background:#e8590c;animation:fltpulse 1.1s infinite}
+  .rtabs .tdot[hidden]{display:none}
+  .rtbody{flex:1;min-height:0;overflow:auto;display:flex;flex-direction:column}
+  .rtbody::-webkit-scrollbar{width:8px}
+  .rtbody::-webkit-scrollbar-thumb{background:#d3dce7;border-radius:4px}
+  .rtabp{display:none}
+  .rtabp.on{display:block}
+  .rtabp .thead{font-size:11.5px;color:var(--muted);line-height:1.5;margin:0 0 7px;
+    padding:0 2px 6px;border-bottom:1px solid #eef1f6}
   .box{padding:10px 13px;flex:0 0 auto}
   .box>b{display:flex;align-items:center;gap:7px;margin:0 0 9px;padding-bottom:6px;
     font-size:13.5px;font-weight:600;color:var(--ink);border-bottom:1px solid #eef1f6}
@@ -174,7 +212,7 @@
   .saveitem{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:7px 4px;border-bottom:1px solid #f1f5fa}
   .saveitem small{color:var(--muted)}
 
-  /* ── 拓扑模板 ── */
+  /* ── 网架结构（拓扑模板） ── */
   .topos{display:grid;grid-template-columns:1fr 1fr;gap:6px}
   .topos button{position:relative;text-align:left;padding:7px 9px;border-radius:9px;line-height:1.35;font-size:12px}
   .topos button small{display:block;color:var(--muted);font-size:10px;font-weight:400;
@@ -183,14 +221,14 @@
   .topos button.cur small{color:#b9c9dd}
 
   /* ── 工作台自适应：中小屏自动收窄侧栏、压缩顶栏，保证一屏放得下 ── */
-  @media (max-width:1680px){ .mid{grid-template-columns:268px minmax(0,1fr) 312px} }
+  @media (max-width:1680px){ .mid{grid-template-columns:316px minmax(0,1fr) 312px} }
   @media (max-width:1500px){
-    .mid{grid-template-columns:250px minmax(0,1fr) 292px}
+    .mid{grid-template-columns:298px minmax(0,1fr) 292px}
     .box{padding:9px 11px}
     .legend{grid-template-columns:1fr;gap:5px}
     .legend span{font-size:10.5px}
   }
-  @media (max-width:1330px){ .mid{grid-template-columns:228px minmax(0,1fr) 264px} .hint{display:none} }
+  @media (max-width:1330px){ .mid{grid-template-columns:276px minmax(0,1fr) 264px} .hint{display:none} }
   @media (max-height:880px){
     .app{gap:7px;padding:9px 11px}
     .topbar{padding:7px 12px 8px;gap:6px}
@@ -320,11 +358,11 @@
 
   /* 小笔记本 / 平板横屏：收窄两侧栏 */
   @media (max-width:1360px){
-    .mid{grid-template-columns:262px minmax(0,1fr) 308px}
+    .mid{grid-template-columns:310px minmax(0,1fr) 308px}
   }
   @media (max-width:1180px){
     .app{padding:9px 10px;gap:7px}
-    .mid{grid-template-columns:230px minmax(0,1fr) 282px;gap:7px}
+    .mid{grid-template-columns:278px minmax(0,1fr) 282px;gap:7px}
     .box{padding:9px 11px}
     h1{font-size:15px}
     .scnlist{max-height:186px}
@@ -360,6 +398,7 @@
       overflow:auto;border-radius:0 14px 14px 0;box-shadow:0 12px 40px rgba(18,38,63,.28);
       transform:translateX(-105%);transition:transform .22s ease}
     .mid>.side.sider{left:auto;right:0;border-radius:14px 0 0 14px;transform:translateX(105%)}
+    .mid>.side.sidenav{width:min(92vw,356px)}
     .mid>.side.open{transform:none}
     .mid.focus>.side{display:flex}
     .drawerx{display:block;width:100%;text-align:left;border:0;background:#e7eefb;color:#33465c;
@@ -396,7 +435,7 @@
 <body>
 <div class="app">
   <header class="pane menubar">
-    <button class="mobbtn" id="bPanelL" title="元件库 / 拓扑模板 / 故障场景库">☰ 面板</button>
+    <button class="mobbtn" id="bPanelL" title="元件库 / 网架结构 / 故障演练">☰ 面板</button>
     <div class="brand">双花瓣配电网 <em>仿真工作台</em></div>
     <nav class="mn" id="mn">
       <button class="mnu" data-m="file">文件</button>
@@ -411,7 +450,7 @@
       <button id="bOut" class="mini" title="开关站母联：常开 = 两段互为备用；常合 = 两段并列运行">母联常开</button>
     </span>
     <span class="tbright">
-      <button class="mobbtn" id="bPanelR" title="动作过程 / 图元属性 / 通断分析">⚙ 属性</button>
+      <button class="mobbtn" id="bPanelR" title="元件属性 / 动作过程">⚙ 属性</button>
       <span class="hint" id="hint"></span>
       <span class="ctl" title="符号比例：只缩放图元符号，不改变画布缩放">符号比例
         <input type="range" id="rSz" min="55" max="130" step="5" value="80"><b id="lSz" class="num">80%</b></span>
@@ -419,9 +458,19 @@
   </header>
 
   <div class="mid" id="mid">
-    <aside class="side" id="sideL">
+    <aside class="side sidenav" id="sideL">
       <button class="drawerx" id="xL">✕ 收起面板</button>
-      <div class="pane box">
+      <div class="navwrap">
+        <div class="rail" id="railL" role="tablist" aria-label="左栏内容（元件库 / 网架结构 / 故障演练）">
+          <button class="rb" data-p="pal" role="tab" aria-selected="false" title="元件库：把变电站 / 开关站 / 负荷拖到画布搭网">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.2 20 7.6v8.8L12 20.8 4 16.4V7.6z"/><path d="M4 7.6 12 12l8-4.4M12 12v8.8"/></svg><span>元件库</span></button>
+          <button class="rb on" data-p="topo" role="tab" aria-selected="true" title="网架结构：双花瓣 / 单花瓣 / 双环网 / 单环网 / 单辐射">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.7h8M5.7 7.7l4.7 8.6M18.3 7.7l-4.7 8.6"/><circle cx="5" cy="6" r="2.3"/><circle cx="19" cy="6" r="2.3"/><circle cx="12" cy="18" r="2.3"/></svg><span>网架结构</span></button>
+          <button class="rb" data-p="sim" role="tab" aria-selected="false" title="故障演练：场景库 · 模拟故障 / 隔离 / 转供恢复">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.7 20.8 19.3H3.2z"/><path d="M12 9.6v4.4M12 16.9v.2"/></svg><span>故障演练</span></button>
+        </div>
+        <div class="railbody" id="railBody">
+      <div class="pane box navp" data-p="pal">
         <b>元件库 <span class="tlstate">拖入画布 · 或点击加入</span></b>
         <div class="palette" id="palette">
           <button class="pitem" data-k="sub" draggable="true" title="10 kV 电源（主变 + 加粗母线 + 出线间隔）">
@@ -459,8 +508,8 @@
         <div class="row"><button id="bBlank" class="mini">空白网架 / 清空画布…</button></div>
       </div>
 
-      <div class="pane box">
-        <b>拓扑模板 <span class="tlstate">打开模板 = 加载一份 JSON</span></b>
+      <div class="pane box navp on" data-p="topo">
+        <b>网架结构 <span class="tlstate">打开模板 = 加载一份 JSON</span></b>
         <div class="topos" id="topoList"></div>
         <div class="row" style="margin-top:8px">
           <button id="bSaveLocal" class="mini" title="把当前拓扑存到浏览器本地">保存到本地</button>
@@ -470,7 +519,7 @@
         <div class="kv" id="topoMsg">模板可自由编辑；「自定义」是空白网架，从元件库拖出来搭。</div>
       </div>
 
-      <div class="pane box">
+      <div class="pane box navp" data-p="sim">
         <b>故障演练 · 场景库</b>
         <select id="selScene" title="预置故障场景" hidden></select>
         <div class="scnlist" id="scnList"></div>
@@ -485,6 +534,8 @@
           <button id="bIso" class="mini">② 隔离故障</button>
           <button id="bRestore" class="mini">③ 转供恢复</button>
           <button id="bImpFault" class="mini" title="从文本导入自定义故障点">导入故障点…</button>
+        </div>
+      </div>
         </div>
       </div>
 
@@ -510,11 +561,17 @@
 
     <aside class="side sider" id="sideR">
       <button class="drawerx" id="xR">✕ 收起面板</button>
-      <div class="pane box">
-        <b>动作过程 <span class="tlstate" id="tlMsg">尚未开始</span></b>
-        <div id="pAct" class="act"></div>
+      <div class="rtabs" id="rtabs" role="tablist" aria-label="右栏内容（元件属性 / 动作过程）">
+        <button class="rtb on" data-t="sel" role="tab" aria-selected="true" title="选中图元的属性、编辑与通断分析">元件属性</button>
+        <button class="rtb" data-t="act" role="tab" aria-selected="false" title="演练动作过程时间轴（0.00 s = 故障发生时刻）">动作过程<i class="tdot" id="rtDot" hidden></i></button>
       </div>
-      <div class="pane box"><b>图元属性 · 编辑 · 通断分析</b><div id="pSel"></div></div>
+      <div class="rtbody" id="rtBody">
+        <div class="pane box rtabp on" data-t="sel"><div id="pSel"></div></div>
+        <div class="pane box rtabp" data-t="act">
+          <div class="thead"><span id="tlMsg">尚未开始</span></div>
+          <div id="pAct" class="act"></div>
+        </div>
+      </div>
     </aside>
   </div>
 
@@ -1224,7 +1281,7 @@ function restoreStepDetail(){
 }
 function actionPanel(){
   var box=document.getElementById('pAct'); if(!box) return;
-  if(!FAULT){ box.innerHTML='<div class="ph">未开始演练。在左侧「场景库」选择故障场景后点 <b>自动演示</b>，'+
+  if(!FAULT){ box.innerHTML='<div class="ph">未开始演练。在左栏「故障演练」里选择场景后点 <b>自动演示</b>，'+
     '或依次点 <b>① 模拟故障 → ② 隔离故障 → ③ 转供恢复</b> 单步执行。</div>'; return; }
   var ph=FAULT.phase||0;
   /* 竖向时间轴：＜0.00 s 正常运行 → 0.00 s 故障发生 → 之后各步 */
@@ -1278,7 +1335,7 @@ function badge(g,cx,cy,title,sub,color){
 function devDown(id,ev){
   if(ev.target.__term) return;
   var d=DEV[id]; if(!d) return;
-  ev.stopPropagation(); hideCtx(); SEL={kind:'dev',id:id};
+  ev.stopPropagation(); hideCtx(); SEL={kind:'dev',id:id}; setRTab('sel');
   var w=toWorld(ev); push();
   drag={kind:'dev',id:id,dx:w[0]-d.x,dy:w[1]-d.y};
   focusSel(); paint();
@@ -1317,7 +1374,7 @@ function render(){
   if(!ORDER.length){                              /* 空画布引导（跟随视图中心，始终可见） */
     txt(SVG,CX,CY-16,'画布为空 · 从左侧「元件库」拖入变电站 / 开关站开始搭网',
       {size:20,weight:700,fill:'#b3c0d0',halo:0});
-    txt(SVG,CX,CY+16,'或从「拓扑模板」载入一个预设（打开模板 = 加载一份 JSON）',
+    txt(SVG,CX,CY+16,'或从「网架结构」载入一个预设（打开模板 = 加载一份 JSON）',
       {size:14,fill:'#c3cede',halo:0});
   }
 
@@ -1364,7 +1421,7 @@ function render(){
         {a:'fault',t:'设为故障点'},{a:'del',t:'删除这条电缆',cls:'danger'}],
         '电缆 '+(isTie?'（常开联络）':'')); });
     hit.addEventListener('mousedown',function(ev){ ev.stopPropagation(); hideCtx();
-      SEL={kind:'wire',id:w.id};
+      SEL={kind:'wire',id:w.id}; setRTab('sel');
       var wp=toWorld(ev); push();
       drag={kind:'wire',id:w.id,sx:wp[0],sy:wp[1],
             ox:(w.bias||[0,0])[0],oy:(w.bias||[0,0])[1]};
@@ -1957,7 +2014,9 @@ var MENUDEF={
     ['reset','复位拓扑（回到当前模板初始状态）']]},
   view:{title:'视图',items:[['zoomIn','放大','+'],['zoomOut','缩小','−'],['zoomFit','适应窗口','F'],
     ['zoom100','实际大小 100%'],['-'],['szUp','符号比例 ＋'],['szDn','符号比例 −'],['-'],
-    ['focus','专注画布'],['flow','显示潮流箭头'],['glow','显示主干辉光']]},
+    ['focus','专注画布'],['flow','显示潮流箭头'],['glow','显示主干辉光'],['-'],
+    ['navPal','左栏：元件库'],['navTopo','左栏：网架结构'],['navSim','左栏：故障演练'],['-'],
+    ['rtabSel','右栏：元件属性'],['rtabAct','右栏：动作过程']]},
   drill:{title:'演练',items:[['demo','▶ 自动演示'],['step','单步执行'],['clear','复位运行方式'],['-'],
     ['impFault','导入故障点…']]},
   help:{title:'帮助',items:[['keys','快捷键一览'],['doc','接线约定 / 图元画法'],['about','关于本工具']]}
@@ -1967,9 +2026,13 @@ var ACTFN={loop:actLoop,new:actReset,reset:actReset,export:actExport,import:actI
   allClose:actAllClose,allOpen:actAllOpen,zoomIn:actZoomIn,zoomOut:actZoomOut,zoomFit:actZoomFit,
   zoom100:actZoom100,focus:actFocus,flow:actFlow,glow:actGlow,outward:actOutward,demo:actDemo,
   step:actStep,clear:actClear,impFault:actImpFault,keys:showKeys,doc:showDoc,about:showAbout,
-  szUp:function(){ setSz(SZ*100+10); },szDn:function(){ setSz(SZ*100-10); }};
+  szUp:function(){ setSz(SZ*100+10); },szDn:function(){ setSz(SZ*100-10); },
+  navPal:function(){ setNav('pal'); },navTopo:function(){ setNav('topo'); },navSim:function(){ setNav('sim'); },
+  rtabSel:function(){ setRTab('sel'); },rtabAct:function(){ setRTab('act'); }};
 function menuState(k){ if(k==='flow') return SHOW_FLOW; if(k==='glow') return SHOW_GLOW;
   if(k==='outward') return OUT; if(k==='loop') return LOOP;
+  if(k==='navPal') return NAV_P==='pal'; if(k==='navTopo') return NAV_P==='topo'; if(k==='navSim') return NAV_P==='sim';
+  if(k==='rtabSel') return RTAB==='sel'; if(k==='rtabAct') return RTAB==='act';
   if(k==='focus') return document.getElementById('mid').classList.contains('focus'); return false; }
 function buildMenu(key){
   var d=MENUDEF[key]; if(!d) return '';
@@ -2005,7 +2068,11 @@ MENU.addEventListener('click',function(ev){
 
 /* ================= 帮助内容 ================= */
 function showKeys(){ openDlg('快捷键一览',
-  '<table>'+
+  '<h4>侧栏（左 = 搭网与选场景，右 = 查图元与看动作）</h4><table>'+
+  '<tr><td class="k">左栏图标条</td><td>元件库 / 网架结构 / 故障演练 三页竖向切换，默认「网架结构」</td></tr>'+
+  '<tr><td class="k">右栏标签</td><td>元件属性 / 动作过程；默认「元件属性」，开始故障演练后自动切到「动作过程」</td></tr>'+
+  '</table>'+
+  '<h4>键鼠</h4><table>'+
   '<tr><td class="k">滚轮 / + / −</td><td>缩放画布（以光标为中心）</td></tr>'+
   '<tr><td class="k">空白处拖动</td><td>平移画布</td></tr>'+
   '<tr><td class="k">F</td><td>适应窗口</td></tr>'+
@@ -2783,7 +2850,7 @@ function renderScnList(){
   });
   box.innerHTML=h||'<div class="scngp">当前网架没有可用场景</div>';
   var cs=SCENES[cur], full=document.getElementById('scnFull');
-  if(full) full.innerHTML=cs?('<b>'+esc(cs.n)+'</b>'+esc(cs.d||'')):'<b>未选择场景</b>请切换拓扑模板。';
+  if(full) full.innerHTML=cs?('<b>'+esc(cs.n)+'</b>'+esc(cs.d||'')):'<b>未选择场景</b>请切换网架结构。';
 }
 document.getElementById('scnList').addEventListener('click',function(ev){
   var b=ev.target.closest?ev.target.closest('button[data-i]'):null; if(!b) return;
@@ -2853,7 +2920,8 @@ function tlSummary(n){
 function tlText(n){ return tlSummary(n); }
 /* 三条入口（①②③ / 单步 / 自动演示）共用的进度同步：右栏「动作过程」与底栏芯片同源 */
 function syncPhase(){ var n=FAULT?(FAULT.phase||0):0; DEMO.step=n; setTl(n);
-  tlMsg(FAULT?tlSummary(n):'尚未开始'); }
+  tlMsg(FAULT?tlSummary(n):'尚未开始');
+  if(NAV_INIT){ if(n>=1) setRTab('act'); else setRTab(RTAB==='act'?'act':'sel'); } }
 function ensurePhase(n){ if(FAULT&&(FAULT.phase||0)<n) FAULT.phase=n; }
 function setPlayBtn(){ var b=document.getElementById('bPlay'); if(!b) return;
   b.textContent=DEMO.playing?'⏸ 暂停':(DEMO.paused?'▶ 继续':'▶ 自动演示'); }
@@ -2995,7 +3063,7 @@ function panels(){
     else if(ts.shut===ts.tot) K(SIM.paired?'bad':'', ts.tot+' 座开关站母联合上'+(SIM.paired?'（两电源已并列）':''));
     else K('warn', ts.shut+' / '+ts.tot+' 座开关站母联合上（其余分位）');
   }
-  if(!ORDER.length) K('', '画布为空：从左侧「元件库」拖入变电站 / 开关站开始搭网，或从「拓扑模板」载入预设');
+  if(!ORDER.length) K('', '画布为空：从左侧「元件库」拖入变电站 / 开关站开始搭网，或从「网架结构」载入预设');
   if(TOPO.radial) K('warn','单辐射接线：无联络通道，故障段下游须停电待修复');
   if(nSp) K('','预留/备用出线间隔 '+nSp+' 个（未接线）');
   if(FAULT) K('warn','已设置故障点：'+esc(FAULT.label)+'（① 模拟 ② 隔离 ③ 恢复）');
@@ -3073,7 +3141,7 @@ var TOG_TOUCHED=false;
 /* 首屏/缩窗时左栏若放不下，自动收起「图例」，保证一屏可见；用户手动操作过则不再干预 */
 function autoFitSide(){
   if(TOG_TOUCHED) return;
-  var side=document.querySelector('.side'); if(!side) return;
+  var side=document.getElementById('railBody')||document.querySelector('.side'); if(!side) return;
   var tog=document.querySelector('.box>b.tog'); if(!tog) return;
   var box=tog.parentNode, over=function(){ return side.scrollHeight-side.clientHeight>6; };
   if(over()) box.classList.add('closed');
@@ -3132,6 +3200,27 @@ document.getElementById('bPanelR').onclick=function(){ var r=document.getElement
 document.getElementById('mask').onclick=closeDrawers;
 document.getElementById('xL').onclick=closeDrawers;
 document.getElementById('xR').onclick=closeDrawers;
+
+/* ══════════ 左右侧栏：左 = 竖向图标导航（元件库 / 网架结构 / 故障演练），
+   右 = 横向标签页（元件属性 / 动作过程）。演练一旦开始（① 之后）自动切到「动作过程」。 ══════════ */
+var NAV_P='topo', RTAB='sel', NAV_INIT=false;
+function setNav(p){ NAV_P=p;
+  [].forEach.call(document.querySelectorAll('#railL .rb'),function(b){
+    var on=b.dataset.p===p; b.classList.toggle('on',on); b.setAttribute('aria-selected',on?'true':'false'); });
+  [].forEach.call(document.querySelectorAll('#railBody .navp'),function(d){
+    d.classList.toggle('on',d.dataset.p===p); }); }
+function setRTab(t){ RTAB=t;
+  [].forEach.call(document.querySelectorAll('#rtabs .rtb'),function(b){
+    var on=b.dataset.t===t; b.classList.toggle('on',on); b.setAttribute('aria-selected',on?'true':'false'); });
+  [].forEach.call(document.querySelectorAll('#rtBody .rtabp'),function(d){
+    d.classList.toggle('on',d.dataset.t===t); });
+  var dot=document.getElementById('rtDot');
+  if(dot) dot.hidden=!(FAULT&&(FAULT.phase||0)>=1&&t!=='act'); }
+[].forEach.call(document.querySelectorAll('#railL .rb'),function(b){
+  b.onclick=function(){ setNav(b.dataset.p); }; });
+[].forEach.call(document.querySelectorAll('#rtabs .rtb'),function(b){
+  b.onclick=function(){ setRTab(b.dataset.t); }; });
+NAV_INIT=true;
 function syncRotMask(){ var m=document.getElementById('rotMask'); if(!m) return;
   m.classList.toggle('on', !!(isTouch()&&mqPortrait.matches&&window.innerWidth<=900&&!ROT_SKIP)); }
 document.getElementById('bGoLand').onclick=function(){
