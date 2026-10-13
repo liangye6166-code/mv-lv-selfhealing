@@ -3,6 +3,12 @@
 #   用法：bash tools/public-preview.sh
 #   说明：隧道地址是随机生成的，进程结束后失效；重跑会换一个新地址。
 #        需要固定域名请改用 Cloudflare 命名隧道（需登录账号）。
+#
+#   想让它常驻（不随终端 / 会话结束而失效）：
+#     setsid nohup bash tools/public-preview.sh >/tmp/petal-preview.log 2>&1 < /dev/null &
+#     grep -oE 'https://[a-z0-9-]+\.trycloudflare\.com' /tmp/petal-preview-tunnel.log | head -1
+#   找回当前地址：grep -oE 'https://[a-z0-9-]+\.trycloudflare\.com' /tmp/petal-preview-tunnel.log | tail -1
+#   关闭：pkill -f 'cloudflared tunnel'; pkill -f 'http.server 8099'
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
@@ -26,4 +32,6 @@ fi
 
 echo "本地站点： http://127.0.0.1:$PORT/  （直接读磁盘上的 index.html，改完刷新即可）"
 echo "正在建立公网隧道，地址形如 https://xxx.trycloudflare.com ："
-exec "$BIN" tunnel --no-autoupdate --protocol http2 --url "http://127.0.0.1:$PORT"
+echo "（地址同时写入 /tmp/petal-preview-tunnel.log，随时可用 grep 找回）"
+"$BIN" tunnel --no-autoupdate --protocol http2 --url "http://127.0.0.1:$PORT" 2>&1 \
+  | tee -a /tmp/petal-preview-tunnel.log
